@@ -25,16 +25,40 @@ input,select,textarea{width:100%;padding:13px;border-radius:12px;border:1px soli
 <div class="section">Artist & Music Promotion</div>
 <div class="card" style="border:3px solid #f59e0b"><img src="image1.jpg" alt="Liquid Fire Praise Choir"><div class="txt"><h3>🔥 Liquid Fire Praise</h3><p style="color:#d97706;font-weight:bold;margin-top:8px">
   Available: Events • Ads • Church • Festivals — Enquiries Welcome
-</p><p style="color:#d97706;font-weight:bold;margin-top:8px">Available: Events • Ads • Church • Festivals — R450 base</p></div></div>
-<div class="card"><img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f"><div class="txt"><h3>Independent Producers</h3><p>KTTP Studio Mbombela</p></div></div>
-<div class="card"><img src="https://images.unsplash.com/photo-1504609813442-a8924e83f76e"><div class="txt"><h3>Traditional Dancers — Gawulo</h3><p>Heritage storytelling</p></div></div>
+</p></div></div>
 <div class="form" id="req">
-<h2>Start Campaign — Liquid Fire Praise</h2>
-<input id="name" placeholder="Your Business / Church Name">
-<select id="type"><option>Local Retailer</option><option>Fashion Brand</option><option>🔥 Liquid Fire Praise — Book Choir</option><option>Artist Promotion</option><option>Festival Gawulo Combo</option></select>
-<textarea id="msg" rows="3" placeholder="Date, event, budget?"></textarea>
-<button class="btn" style="width:100%" onclick="send()">Begin Request — Book Now</button>
-<p style="text-align:center;color:#666;font-size:11px;margin-top:10px">BID d0eb58c5fbdb • kttpm4@gmail.com</p>
+  <h2 id="formTitle">Start Campaign — Booking Enquiry</h2>
+
+  <label for="name">Business / Church / Client Name *</label>
+  <input id="name" type="text"
+         placeholder="Enter your name or organisation"
+         required>
+
+  <label for="type">Select a Service *</label>
+  <select id="type" required>
+    <option value="Local Retailer">Local Retailer</option>
+    <option value="Fashion Brand">Fashion Brand</option>
+    <option value="Liquid Fire Praise — Book Choir">🔥 Liquid Fire Praise — Book Choir</option>
+    <option value="Artist Promotion">Artist Promotion</option>
+    <option value="Festival Gawulo Combo">Festival Gawulo Combo</option>
+  </select>
+
+  <label for="msg">Enquiry Details *</label>
+  <textarea id="msg" rows="4"
+    placeholder="Tell us about your event, campaign, date or requirements"
+    required></textarea>
+
+  <button class="btn" style="width:100%" onclick="send()">
+    Begin Request — Book Now
+  </button>
+
+  <p style="text-align:center;color:#666;font-size:11px;margin-top:10px">
+    Your details will open in WhatsApp. They are shared when you send the message.
+  </p>
+
+  <p style="text-align:center;color:#666;font-size:11px;margin-top:10px">
+    BID d0eb58c5fbdb • kttpm4@gmail.com
+  </p>
 </div>
 <script>
 
