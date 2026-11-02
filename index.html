@@ -62,20 +62,29 @@ input,select,textarea{width:100%;padding:13px;border-radius:12px;border:1px soli
 </div>
 <script>
 
-function send(){
-  let n=document.getElementById('name').value.trim()||'Client';
-  let t=document.getElementById('type').value;
-  let m=document.getElementById('msg').value.trim()||'No message';
+function send() {
+  const n = document.getElementById('name').value.trim();
+  const t = document.getElementById('type').value;
+  const m = document.getElementById('msg').value.trim();
 
-  let text=`🔥 AMPLIFY AMPLIFY - LIQUID FIRE PRAISE
+  if (!n || !m) {
+    alert('Please enter your name and enquiry details.');
+    return;
+  }
+
+  const text = `🔥 AMPLIFY AMPLIFY - BOOKING ENQUIRY
+
 Name: ${n}
-Type: ${t}
+Service: ${t}
 Details: ${m}
-From: Web App 2.0 BID d0eb58c5fbdb`;
+
+From: Amplify Amplify
+BID: d0eb58c5fbdb`;
 
   window.open(
     `https://wa.me/27661498648?text=${encodeURIComponent(text)}`,
-    '_blank'
+    '_blank',
+    'noopener,noreferrer'
   );
 }
 </script>
