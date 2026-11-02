@@ -86,11 +86,10 @@ function send() {
   const t = document.getElementById('type').value;
   const m = document.getElementById('msg').value.trim();
 
-  if (!n || !m) {
-    alert('Please enter your name and enquiry details.');
+    if (!n || !t || !m) {
+    alert('Please enter your name, choose a service, and provide enquiry details.');
     return;
   }
-
   const text = `🔥 AMPLIFY AMPLIFY - BOOKING ENQUIRY
 
 Name: ${n}
