@@ -195,265 +195,397 @@
 </footer>
 
 <script>
-  const SUPABASE_URL = "https://wukojdsqimrzoakdmilr.supabase.co";
-  const SUPABASE_KEY = 
-"sb_publishable_4Rj9ZJ56xeDyPEw7ZQdbWA_endWv91u";
+  
+const SUPABASE_URL = "https://wukojdsqimrzoakdmilr.supabase.co";
+const SUPABASE_KEY = "sb_publishable_4Rj9ZJ56xeDyPEw7ZQdbWA_endWv91u";
 
-  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  let currentUser = null;
-  let currentAccount = null;
+let currentUser = null;
+let currentAccount = null;
 
-  const $ = (id) => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
-  function showMessage(message, isError = false) {
-    const box = $("message");
-    box.textContent = message;
-    box.classList.remove("hidden");
-    box.style.border = isError ? "1px solid #e36b6b" : "1px solid #28b9d8";
+function showMessage(message, isError = false) {
+  const box = $("message");
+  box.textContent = message;
+  box.classList.remove("hidden");
+  box.style.border = isError
+    ? "1px solid #e36b6b"
+    : "1px solid #28b9d8";
+}
+
+function clearMessage() {
+  $("message").classList.add("hidden");
+}
+
+function setBusy(button, busy, label) {
+  button.disabled = busy;
+
+  if (busy) {
+    button.dataset.oldLabel = button.textContent;
+    button.textContent = label;
+  } else {
+    button.textContent = button.dataset.oldLabel || label;
   }
+}
 
-  function clearMessage() {
-    $("message").classList.add("hidden");
-  }
-
-  function setBusy(button, busy, label) {
-    button.disabled = busy;
-    if (busy) {
-      button.dataset.oldLabel = button.textContent;
-      button.textContent = label;
+function showAccountSetupOnly(show) {
+  Array.from($("dashboard").children).forEach((element) => {
+    if (element.id === "accountSetup") {
+      element.classList.toggle("hidden", !show);
     } else {
-      button.textContent = button.dataset.oldLabel || label;
+      element.classList.toggle("hidden", show);
     }
+  });
+}
+
+function prepareAccountSetup() {
+  $("setupEmail").value = currentUser?.email || "";
+  $("setupEmail").readOnly = true;
+  $("authPanel").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
+  showAccountSetupOnly(true);
+}
+
+async function createBusinessAccount(details, button) {
+  if (!currentUser || !currentUser.id || !currentUser.email) {
+    throw new Error("Please sign in again before completing registration.");
   }
 
-  async function register() {
-    clearMessage();
+  const business = details.business.trim();
+  const contact = details.contact.trim();
+  const phone = details.phone.trim();
 
-    const business = $("businessName").value.trim();
-    const contact = $("contactName").value.trim();
-    const email = $("registerEmail").value.trim();
-    const phone = $("phone").value.trim();
-    const password = $("registerPassword").value;
-    const button = $("registerButton");
+  if (!business || business.length > 160) {
+    throw new Error("Please enter a valid business name.");
+  }
 
-    if (!business || !contact || !email || password.length < 8) {
-      showMessage("Please complete the required fields. Password must be at least 8 characters.", true);
-      return;
-    }
+  if (!contact || contact.length > 160) {
+    throw new Error("Please enter a valid contact name.");
+  }
 
-    setBusy(button, true, "Registering...");
+  setBusy(button, true, "Creating account...");
 
-    try {
-      const { data, error } = await db.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: contact }
-        }
-      });
+  try {
+    const { error } = await db.rpc("register_client_account", {
+      p_business_name: business,
+      p_contact_name: contact,
+      p_email: currentUser.email,
+      p_phone: phone || null
+    });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      if (!data.session) {
-        showMessage("Registration started. Please check your email to confirm your address. Then return here and sign in to complete your business account registration.");
-        return;
+    showMessage(
+      "Your business account has been registered and is awaiting ALKETUM review."
+    );
+
+    await loadDashboard();
+  } finally {
+    setBusy(button, false, button.id === "registerButton"
+      ? "Register My Business"
+      : "Complete Business Registration");
+  }
+}
+
+async function register() {
+  clearMessage();
+
+  const business = $("businessName").value.trim();
+  const contact = $("contactName").value.trim();
+  const email = $("registerEmail").value.trim();
+  const phone = $("phone").value.trim();
+  const password = $("registerPassword").value;
+  const button = $("registerButton");
+
+  if (!business || !contact || !email || password.length < 8) {
+    showMessage(
+      "Please complete the required fields. Password must be at least 8 characters.",
+      true
+    );
+    return;
+  }
+
+  setBusy(button, true, "Registering...");
+
+  try {
+    const { data, error } = await db.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: contact }
       }
+    });
 
-      currentUser = data.user;
+    if (error) throw error;
 
-      const { error: accountError } = await db.rpc("register_client_account", {
-        p_business_name: business,
-        p_contact_name: contact,
-        p_email: email,
-        p_phone: phone || null
-      });
-
-      if (accountError) throw accountError;
-
-      showMessage("Your business account has been registered and is awaiting ALKETUM review.");
-      await loadDashboard();
-    } catch (error) {
-      showMessage(error.message || "Registration could not be completed.", true);
-    } finally {
-      setBusy(button, false, "Register My Business");
+    if (!data.session) {
+      showMessage(
+        "Registration started. Please confirm your email, then return and sign in. You will be asked to complete your business registration."
+      );
+      return;
     }
+
+    currentUser = data.user;
+
+    await createBusinessAccount(
+      { business, contact, phone },
+      button
+    );
+  } catch (error) {
+    showMessage(error.message || "Registration could not be completed.", true);
+  } finally {
+    setBusy(button, false, "Register My Business");
+  }
+}
+
+async function completeAccount() {
+  clearMessage();
+
+  const button = $("completeAccountButton");
+
+  try {
+    await createBusinessAccount(
+      {
+        business: $("setupBusinessName").value,
+        contact: $("setupContactName").value,
+        phone: $("setupPhone").value
+      },
+      button
+    );
+  } catch (error) {
+    showMessage(
+      error.message || "Business registration could not be completed.",
+      true
+    );
+  }
+}
+
+async function login() {
+  clearMessage();
+
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+  const button = $("loginButton");
+
+  if (!email || !password) {
+    showMessage("Please enter your email address and password.", true);
+    return;
   }
 
-  async function login() {
-    clearMessage();
+  setBusy(button, true, "Signing in...");
 
-    const email = $("loginEmail").value.trim();
-    const password = $("loginPassword").value;
-    const button = $("loginButton");
+  try {
+    const { data, error } = await db.auth.signInWithPassword({
+      email,
+      password
+    });
 
-    if (!email || !password) {
-      showMessage("Please enter your email address and password.", true);
-      return;
-    }
+    if (error) throw error;
 
-    setBusy(button, true, "Signing in...");
+    currentUser = data.user;
+    await loadDashboard();
+  } catch (error) {
+    showMessage(error.message || "Sign-in failed.", true);
+  } finally {
+    setBusy(button, false, "Sign In");
+  }
+}
 
-    try {
-      const { data, error } = await db.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+async function loadDashboard() {
+  clearMessage();
 
-      currentUser = data.user;
-      await loadDashboard();
-    } catch (error) {
-      showMessage(error.message || "Sign-in failed.", true);
-    } finally {
-      setBusy(button, false, "Sign In");
-    }
+  const { data: userData, error: userError } =
+    await db.auth.getUser();
+
+  if (userError || !userData.user) {
+    currentUser = null;
+    currentAccount = null;
+    $("dashboard").classList.add("hidden");
+    $("authPanel").classList.remove("hidden");
+    return;
   }
 
-  async function loadDashboard() {
-    clearMessage();
+  currentUser = userData.user;
 
-    const { data: userData, error: userError } = await db.auth.getUser();
-    if (userError || !userData.user) {
-      $("dashboard").classList.add("hidden");
-      $("authPanel").classList.remove("hidden");
-      return;
-    }
+  const { data: account, error } = await db
+    .from("client_accounts")
+    .select("id,business_name,contact_name,account_status")
+    .eq("auth_user_id", currentUser.id)
+    .maybeSingle();
 
-    currentUser = userData.user;
-
-    const { data: account, error } = await db
-      .from("client_accounts")
-      .select("id,business_name,contact_name,account_status")
-      .eq("auth_user_id", currentUser.id)
-      .maybeSingle();
-
-    if (error) {
-      showMessage(error.message, true);
-      return;
-    }
-
-    if (!account) {
-      $("dashboard").classList.add("hidden");
-      $("authPanel").classList.remove("hidden");
-      showMessage("You are signed in, but no business account is registered for this login. Please complete the registration form above.");
-      return;
-    }
-
-    currentAccount = account;
-    $("authPanel").classList.add("hidden");
-    $("dashboard").classList.remove("hidden");
-    $("welcome").textContent = "Welcome, " + account.contact_name + " · " + account.business_name;
-    $("accountStatus").textContent = account.account_status.toUpperCase();
-
-    await loadCampaigns();
+  if (error) {
+    showMessage(error.message, true);
+    return;
   }
 
-  async function submitCampaign() {
-    clearMessage();
+  if (!account) {
+    currentAccount = null;
+    prepareAccountSetup();
 
-    if (!currentAccount) {
-      showMessage("Your business account could not be found. Please sign in again.", true);
-      return;
-    }
+    showMessage(
+      "Your email is confirmed. Please complete your business registration below."
+    );
+    return;
+  }
 
-    const service = $("serviceName").value.trim();
-    const details = $("campaignDetails").value.trim();
-    const button = $("campaignButton");
+  currentAccount = account;
 
-    if (!service || !details) {
-      showMessage("Please enter the service requested and campaign details.", true);
-      return;
-    }
+  $("authPanel").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
+  showAccountSetupOnly(false);
 
-    setBusy(button, true, "Submitting...");
+  $("welcome").textContent =
+    "Welcome, " + account.contact_name + " · " + account.business_name;
 
-    try {
-      const { error } = await db.from("client_campaigns").insert({
+  $("accountStatus").textContent =
+    account.account_status.toUpperCase();
+
+  await loadCampaigns();
+}
+
+async function submitCampaign() {
+  clearMessage();
+
+  if (!currentAccount) {
+    showMessage(
+      "Your business account could not be found. Please sign in again.",
+      true
+    );
+    return;
+  }
+
+  const service = $("serviceName").value.trim();
+  const details = $("campaignDetails").value.trim();
+  const button = $("campaignButton");
+
+  if (!service || !details) {
+    showMessage(
+      "Please enter the service requested and campaign details.",
+      true
+    );
+    return;
+  }
+
+  setBusy(button, true, "Submitting...");
+
+  try {
+    const { error } = await db
+      .from("client_campaigns")
+      .insert({
         client_account_id: currentAccount.id,
         service_name: service,
         campaign_details: details
       });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      $("serviceName").value = "";
-      $("campaignDetails").value = "";
-      showMessage("Your campaign enquiry has been submitted.");
-      await loadCampaigns();
-    } catch (error) {
-      showMessage(error.message || "Your enquiry could not be submitted.", true);
-    } finally {
-      setBusy(button, false, "Submit Campaign Enquiry");
-    }
+    $("serviceName").value = "";
+    $("campaignDetails").value = "";
+
+    showMessage("Your campaign enquiry has been submitted.");
+
+    await loadCampaigns();
+  } catch (error) {
+    showMessage(
+      error.message || "Your enquiry could not be submitted.",
+      true
+    );
+  } finally {
+    setBusy(button, false, "Submit Campaign Enquiry");
+  }
+}
+
+async function loadCampaigns() {
+  const list = $("campaignList");
+  list.textContent = "Loading your enquiries...";
+
+  const { data, error } = await db
+    .from("client_campaigns")
+    .select("service_name,campaign_details,status,requested_at")
+    .eq("client_account_id", currentAccount.id)
+    .order("requested_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Could not load enquiries: " + error.message;
+    return;
   }
 
-  async function loadCampaigns() {
-    const list = $("campaignList");
-    list.textContent = "Loading your enquiries...";
+  list.replaceChildren();
 
-    const { data, error } = await db
-      .from("client_campaigns")
-      .select("service_name,campaign_details,status,requested_at")
-      .eq("client_account_id", currentAccount.id)
-      .order("requested_at", { ascending: false });
-
-    if (error) {
-      list.textContent = "Could not load enquiries: " + error.message;
-      return;
-    }
-
-    list.replaceChildren();
-
-    if (!data || data.length === 0) {
-      list.textContent = "You have not submitted any campaign enquiries yet.";
-      return;
-    }
-
-    data.forEach((campaign) => {
-      const item = document.createElement("div");
-      item.className = "campaign";
-
-      const title = document.createElement("strong");
-      title.textContent = campaign.service_name;
-
-      const status = document.createElement("p");
-      status.textContent = "Status: " + campaign.status.replaceAll("_", " ").toUpperCase();
-
-      const details = document.createElement("p");
-      details.textContent = campaign.campaign_details;
-
-      const date = document.createElement("small");
-      date.textContent = new Date(campaign.requested_at).toLocaleString();
-
-      item.append(title, status, details, date);
-      list.appendChild(item);
-    });
+  if (!data || data.length === 0) {
+    list.textContent =
+      "You have not submitted any campaign enquiries yet.";
+    return;
   }
 
-  async function logout() {
-    await db.auth.signOut();
+  data.forEach((campaign) => {
+    const item = document.createElement("div");
+    item.className = "campaign";
+
+    const title = document.createElement("strong");
+    title.textContent = campaign.service_name;
+
+    const status = document.createElement("p");
+    status.textContent =
+      "Status: " + campaign.status.replaceAll("_", " ").toUpperCase();
+
+    const details = document.createElement("p");
+    details.textContent = campaign.campaign_details;
+
+    const date = document.createElement("small");
+    date.textContent =
+      new Date(campaign.requested_at).toLocaleString();
+
+    item.append(title, status, details, date);
+    list.appendChild(item);
+  });
+}
+
+async function logout() {
+  const { error } = await db.auth.signOut();
+
+  if (error) {
+    showMessage(error.message, true);
+    return;
+  }
+
+  currentUser = null;
+  currentAccount = null;
+
+  $("dashboard").classList.add("hidden");
+  $("authPanel").classList.remove("hidden");
+
+  showMessage("You have signed out.");
+}
+
+$("registerButton").addEventListener("click", register);
+$("loginButton").addEventListener("click", login);
+$("completeAccountButton").addEventListener("click", completeAccount);
+$("campaignButton").addEventListener("click", submitCampaign);
+$("logoutButton").addEventListener("click", logout);
+
+db.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    showMessage(error.message, true);
+    return;
+  }
+
+  if (data.session) {
+    loadDashboard();
+  }
+});
+
+db.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT") {
     currentUser = null;
     currentAccount = null;
+
     $("dashboard").classList.add("hidden");
     $("authPanel").classList.remove("hidden");
-    showMessage("You have signed out.");
   }
-
-  $("registerButton").addEventListener("click", register);
-  $("loginButton").addEventListener("click", login);
-  $("campaignButton").addEventListener("click", submitCampaign);
-  $("logoutButton").addEventListener("click", logout);
-
-  db.auth.getSession().then(({ data }) => {
-    if (data.session) loadDashboard();
-  });
-
-  db.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_OUT") {
-      currentUser = null;
-      currentAccount = null;
-      $("dashboard").classList.add("hidden");
-      $("authPanel").classList.remove("hidden");
-    }
-  });
+});
 </script>
 </body>
 </html>
