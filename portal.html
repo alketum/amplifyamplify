@@ -129,6 +129,38 @@
   </section>
 
   <section id="dashboard" class="hidden">
+  <section id="passwordRecoveryPanel" class="panel hidden">
+    <h2>Reset Your Password</h2>
+    <p class="muted">
+      Enter your registered email address to receive a secure password recovery link.
+    </p>
+
+    <div id="recoveryRequestForm">
+      <label for="recoveryEmail">Email Address</label>
+      <input id="recoveryEmail" type="email" autocomplete="email" required>
+
+      <button id="sendRecoveryButton" type="button">
+        Send Recovery Email
+      </button>
+    </div>
+
+    <div id="newPasswordForm" class="hidden">
+      <label for="newPassword">New Password</label>
+      <input id="newPassword" type="password" minlength="8" autocomplete="new-password">
+
+      <label for="confirmNewPassword">Confirm New Password</label>
+      <input id="confirmNewPassword" type="password" minlength="8" autocomplete="new-password">
+
+      <button id="updatePasswordButton" type="button">
+        Update Password
+      </button>
+    </div>
+
+    <button id="backToLoginButton" class="secondary" type="button">
+      Back to Sign In
+    </button>
+  </section>
+
 
 <div id="accountSetup" class="panel hidden">
   <h2>Complete Your Business Registration</h2>
