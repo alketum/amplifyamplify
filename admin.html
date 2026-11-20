@@ -335,31 +335,33 @@
         </div>
       </div>
 
-      <div class="panel">
-        <h2>Payment Records</h2>
-        <p class="muted">
-          Payment information is displayed for review. No payment changes can be made here.
-        </p>
+     
+<div class="panel">
+  <h2>Payment Records</h2>
+  <p class="muted">
+    Review submitted Yoco payment references. Verify payments only after independently confirming the transaction in Yoco.
+  </p>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Campaign ID</th>
-                <th>Amount</th>
-                <th>Currency</th>
-                <th>Provider</th>
-                <th>Reference</th>
-                <th>Status</th>
-                <th>Verified at</th>
-              </tr>
-            </thead>
-            <tbody id="paymentsTable">
-              <tr><td colspan="7">Loading payments...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Campaign ID</th>
+          <th>Amount</th>
+          <th>Currency</th>
+          <th>Provider</th>
+          <th>Reference</th>
+          <th>Status</th>
+          <th>Verified at</th>
+          <th>Admin Action</th>
+        </tr>
+      </thead>
+      <tbody id="paymentsTable">
+        <tr><td colspan="8">Loading payments...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
     </section>
 
@@ -752,28 +754,52 @@ function renderCampaigns(campaigns, accounts) {
 }
 
 
-    function renderPayments(payments) {
-      const body = $("paymentsTable");
+function renderPayments(payments) {
+  const body = $("paymentsTable");
 
-      if (!payments.length) {
-        body.innerHTML =
-          '<tr><td colspan="7">No payment records found.</td></tr>';
-        return;
-      }
+  if (!payments.length) {
+    body.innerHTML =
+      '<tr><td colspan="8">No payment records found.</td></tr>';
+    return;
+  }
 
-      body.innerHTML = payments.map(payment => `
-        <tr>
-          <td>${escapeHTML(payment.client_campaign_id)}</td>
-          <td>${escapeHTML(payment.amount)}</td>
-          <td>${escapeHTML(payment.currency)}</td>
-          <td>${escapeHTML(payment.provider || "—")}</td>
-          <td>${escapeHTML(payment.provider_reference || "—")}</td>
-          <td>${statusLabel(payment.status)}</td>
-          <td>${escapeHTML(formatDate(payment.verified_at))}</td>
-        </tr>
-      `).join("");
+  body.innerHTML = payments.map(payment => {
+    let actionButtons = "";
+
+    if (payment.status === "pending") {
+      actionButtons = `
+        <button
+          type="button"
+          class="primary"
+          data-payment-id="${escapeHTML(payment.id)}"
+          data-decision="verify">
+          Verify Payment
+        </button>
+        <button
+          type="button"
+          class="secondary"
+          data-payment-id="${escapeHTML(payment.id)}"
+          data-decision="fail">
+          Mark Failed
+        </button>`;
     }
 
+    return `
+      <tr>
+        <td>${escapeHTML(payment.client_campaign_id)}</td>
+        <td>${escapeHTML(payment.amount)}</td>
+        <td>${escapeHTML(payment.currency)}</td>
+        <td>${escapeHTML(payment.provider || "—")}</td>
+        <td>${escapeHTML(payment.provider_reference || "—")}</td>
+        <td>${statusLabel(payment.status)}</td>
+        <td>${escapeHTML(formatDate(payment.verified_at))}</td>
+        <td>${actionButtons || "—"}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+ 
     
 $("accountsTable").addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-account-id]");
@@ -841,6 +867,67 @@ $("campaignsTable").addEventListener("click", async (event) => {
     showMessage(
       "dashboardMessage",
       error.message || "Could not review this campaign.",
+      true
+    );
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$("paymentsTable").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-payment-id]");
+
+  if (!button) return;
+
+  const paymentId = button.dataset.paymentId;
+  const decision = button.dataset.decision;
+
+  if (!["verify", "fail"].includes(decision)) return;
+
+  const actionText = decision === "verify"
+    ? "verify this payment"
+    : "mark this payment as failed";
+
+  const warning = decision === "verify"
+    ? "Only continue after independently confirming this transaction in Yoco."
+    : "Only continue if this payment cannot be confirmed.";
+
+  const confirmed = window.confirm(
+    warning + "\n\nAre you sure you want to " + actionText + "?"
+  );
+
+  if (!confirmed) return;
+
+  button.disabled = true;
+
+  try {
+    const { data, error } = await db.rpc(
+      "admin_review_client_payment",
+      {
+        p_payment_id: paymentId,
+        p_decision: decision
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data || data.success !== true) {
+      throw new Error("The payment review was not confirmed.");
+    }
+
+    await loadDashboard();
+
+    showMessage(
+      "dashboardMessage",
+      decision === "verify"
+        ? "Payment verified. Campaign awaits final administrator approval."
+        : "Payment marked failed. Client may submit another payment."
+    );
+
+  } catch (error) {
+    showMessage(
+      "dashboardMessage",
+      error.message || "Could not review this payment.",
       true
     );
   } finally {
