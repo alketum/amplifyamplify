@@ -325,10 +325,11 @@
                 <th>Campaign details</th>
                 <th>Status</th>
                 <th>Requested</th>
+                <th>Admin Action</th>
               </tr>
             </thead>
             <tbody id="campaignsTable">
-              <tr><td colspan="5">Loading campaigns...</td></tr>
+              <td colspan="6">Loading campaigns...</td></tr>
             </tbody>
           </table>
         </div>
@@ -697,34 +698,59 @@ async function updateAccountStatus(accountId, nextStatus) {
 }
 
 
-    function renderCampaigns(campaigns, accounts) {
-      const body = $("campaignsTable");
+    
+function renderCampaigns(campaigns, accounts) {
+  const body = $("campaignsTable");
 
-      if (!campaigns.length) {
-        body.innerHTML =
-          '<tr><td colspan="5">No campaign enquiries found.</td></tr>';
-        return;
-      }
+  if (!campaigns.length) {
+    body.innerHTML =
+      '<tr><td colspan="6">No campaign enquiries found.</td></tr>';
+    return;
+  }
 
-      const accountMap = new Map(
-        accounts.map(account => [
-          account.id,
-          account.business_name
-        ])
-      );
+  const accountMap = new Map(
+    accounts.map(account => [
+      account.id,
+      account.business_name
+    ])
+  );
 
-      body.innerHTML = campaigns.map(campaign => `
-        <tr>
-          <td>${escapeHTML(
-            accountMap.get(campaign.client_account_id) || "Unknown account"
-          )}</td>
-          <td>${escapeHTML(campaign.service_name)}</td>
-          <td>${escapeHTML(campaign.campaign_details || "—")}</td>
-          <td>${statusLabel(campaign.status)}</td>
-          <td>${escapeHTML(formatDate(campaign.requested_at))}</td>
-        </tr>
-      `).join("");
+  body.innerHTML = campaigns.map(campaign => {
+    let actionButtons = "";
+
+    if (campaign.status === "enquiry") {
+      actionButtons = `
+        <button
+          type="button"
+          class="primary"
+          data-campaign-id="${escapeHTML(campaign.id)}"
+          data-decision="approve">
+          Approve for Payment
+        </button>
+        <button
+          type="button"
+          class="secondary"
+          data-campaign-id="${escapeHTML(campaign.id)}"
+          data-decision="reject">
+          Reject
+        </button>`;
     }
+
+    return `
+      <tr>
+        <td>${escapeHTML(
+          accountMap.get(campaign.client_account_id) || "Unknown account"
+        )}</td>
+        <td>${escapeHTML(campaign.service_name)}</td>
+        <td>${escapeHTML(campaign.campaign_details || "—")}</td>
+        <td>${statusLabel(campaign.status)}</td>
+        <td>${escapeHTML(formatDate(campaign.requested_at))}</td>
+        <td>${actionButtons || "—"}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
 
     function renderPayments(payments) {
       const body = $("paymentsTable");
@@ -765,6 +791,63 @@ $("accountsTable").addEventListener("click", async (event) => {
     button.disabled = false;
   }
 });
+
+$("campaignsTable").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-campaign-id]");
+
+  if (!button) return;
+
+  const campaignId = button.dataset.campaignId;
+  const decision = button.dataset.decision;
+
+  if (!["approve", "reject"].includes(decision)) return;
+
+  const actionText =
+    decision === "approve" ? "approve this enquiry for payment" : "reject this enquiry";
+
+  const confirmed = window.confirm(
+    "Are you sure you want to " + actionText + "?"
+  );
+
+  if (!confirmed) return;
+
+  button.disabled = true;
+
+  try {
+    const { data, error } = await db.rpc(
+      "admin_review_client_campaign",
+      {
+        p_campaign_id: campaignId,
+        p_decision: decision
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data || data.success !== true) {
+      throw new Error("The campaign review was not confirmed.");
+    }
+
+    await loadDashboard();
+
+    showMessage(
+      "dashboardMessage",
+      decision === "approve"
+        ? "Enquiry approved for payment. Campaign is not activated."
+        : "Campaign enquiry rejected."
+    );
+
+  } catch (error) {
+    showMessage(
+      "dashboardMessage",
+      error.message || "Could not review this campaign.",
+      true
+    );
+  } finally {
+    button.disabled = false;
+  }
+});
+
 $("loginForm").addEventListener("submit", async (event) => {
       event.preventDefault();
 
