@@ -297,15 +297,16 @@
             <thead>
               <tr>
                 <th>Business</th>
-                <th>Contact</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Created</th>
+<th>Contact</th>
+<th>Email</th>
+<th>Phone</th>
+<th>Status</th>
+<th>Created</th>
+<th>Admin Action</th>
               </tr>
             </thead>
             <tbody id="accountsTable">
-              <tr><td colspan="6">Loading accounts...</td></tr>
+              <tr><td colspan="7">Loading accounts...</td></tr>
             </tbody>
           </table>
         </div>
@@ -541,26 +542,160 @@
       }
     }
 
-    function renderAccounts(accounts) {
-      const body = $("accountsTable");
+    
+function renderAccounts(accounts) {
+  const body = $("accountsTable");
 
-      if (!accounts.length) {
-        body.innerHTML =
-          '<tr><td colspan="6">No client accounts found.</td></tr>';
-        return;
-      }
+  if (!accounts.length) {
+    body.innerHTML =
+      '<tr><td colspan="7">No client accounts found.</td></tr>';
+    return;
+  }
 
-      body.innerHTML = accounts.map(account => `
-        <tr>
-          <td>${escapeHTML(account.business_name)}</td>
-          <td>${escapeHTML(account.contact_name)}</td>
-          <td>${escapeHTML(account.email || "—")}</td>
-          <td>${escapeHTML(account.phone || "—")}</td>
-          <td>${statusLabel(account.account_status)}</td>
-          <td>${escapeHTML(formatDate(account.created_at))}</td>
-        </tr>
-      `).join("");
+  body.innerHTML = accounts.map(account => {
+    let actionButton = "";
+
+    if (account.account_status === "pending") {
+      actionButton = `
+        <button
+          type="button"
+          class="primary"
+          data-account-id="${escapeHTML(account.id)}"
+          data-next-status="active">
+          Approve
+        </button>`;
+    } else if (account.account_status === "active") {
+      actionButton = `
+        <button
+          type="button"
+          class="secondary"
+          data-account-id="${escapeHTML(account.id)}"
+          data-next-status="suspended">
+          Suspend
+        </button>`;
+    } else if (account.account_status === "suspended") {
+      actionButton = `
+        <button
+          type="button"
+          class="secondary"
+          data-account-id="${escapeHTML(account.id)}"
+          data-next-status="active">
+          Reactivate
+        </button>`;
     }
+
+    return `
+      <tr>
+        <td>${escapeHTML(account.business_name)}</td>
+        <td>${escapeHTML(account.contact_name)}</td>
+        <td>${escapeHTML(account.email || "—")}</td>
+        <td>${escapeHTML(account.phone || "—")}</td>
+        <td>${statusLabel(account.account_status)}</td>
+        <td>${escapeHTML(formatDate(account.created_at))}</td>
+        <td>${actionButton || "—"}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function updateAccountStatus(accountId, nextStatus) {
+  if (!accountId) return;
+
+  const allowedStatuses = ["active", "suspended"];
+
+  if (!allowedStatuses.includes(nextStatus)) {
+    showMessage(
+      "dashboardMessage",
+      "Invalid account status requested.",
+      true
+    );
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Are you sure you want to change this client's account status to " +
+    nextStatus.toUpperCase() + "?"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const { data: userResult, error: userError } =
+      await db.auth.getUser();
+
+    if (userError || !userResult.user) {
+      throw new Error("Your administrator session has expired.");
+    }
+
+    const { data: isAdmin, error: adminError } =
+      await db.rpc("is_alketum_admin");
+
+    if (adminError) throw adminError;
+
+    if (isAdmin !== true) {
+      throw new Error("Administrator permission denied.");
+    }
+
+    const { data: account, error: accountError } =
+      await db
+        .from("client_accounts")
+        .select("id, account_status")
+        .eq("id", accountId)
+        .maybeSingle();
+
+    if (accountError) throw accountError;
+
+    if (!account) {
+      throw new Error("Client account was not found.");
+    }
+
+    const currentStatus = account.account_status;
+
+    const validTransition =
+      (currentStatus === "pending" && nextStatus === "active") ||
+      (currentStatus === "active" && nextStatus === "suspended") ||
+      (currentStatus === "suspended" && nextStatus === "active");
+
+    if (!validTransition) {
+      throw new Error(
+        "This account status has changed. Refresh and try again."
+      );
+    }
+
+    const { data: updatedAccount, error: updateError } =
+      await db
+        .from("client_accounts")
+        .update({ account_status: nextStatus })
+        .eq("id", accountId)
+        .eq("account_status", currentStatus)
+        .select("id, account_status")
+        .maybeSingle();
+
+    if (updateError) throw updateError;
+
+    if (!updatedAccount) {
+      throw new Error(
+        "The account was not updated. Refresh and check its current status."
+      );
+    }
+
+    showMessage(
+      "dashboardMessage",
+      "Client account status successfully changed to " +
+      nextStatus.toUpperCase() + "."
+    );
+
+    await loadDashboard();
+
+  } catch (error) {
+    showMessage(
+      "dashboardMessage",
+      error.message || "Could not update the client account.",
+      true
+    );
+  }
+}
+
 
     function renderCampaigns(campaigns, accounts) {
       const body = $("campaignsTable");
@@ -613,7 +748,24 @@
       `).join("");
     }
 
-    $("loginForm").addEventListener("submit", async (event) => {
+    
+$("accountsTable").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-account-id]");
+
+  if (!button) return;
+
+  const accountId = button.dataset.accountId;
+  const nextStatus = button.dataset.nextStatus;
+
+  button.disabled = true;
+
+  try {
+    await updateAccountStatus(accountId, nextStatus);
+  } finally {
+    button.disabled = false;
+  }
+});
+$("loginForm").addEventListener("submit", async (event) => {
       event.preventDefault();
 
       const email = $("adminEmail").value.trim();
