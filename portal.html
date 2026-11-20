@@ -116,8 +116,8 @@
     }
 
     .hidden {
-      display: none !important;
-    }
+  display: none;
+}
 
     .campaign {
       border-top: 1px solid #344260;
@@ -157,7 +157,7 @@
       Register your business or sign in to manage your campaign enquiries.
     </p>
 
-    <div id="registerForm">
+    <div id="campaignSection" class="panel">
 
       <h3>Create a client account</h3>
 
@@ -209,7 +209,7 @@
   </section>
 
   <!-- PASSWORD RECOVERY -->
-  <section id="passwordRecoveryPanel" class="panel hidden">
+  <section id="recoveryPanel" class="panel hidden">
 
     <h2>Reset Your Password</h2>
 
@@ -217,7 +217,7 @@
       Enter your registered email address to receive a secure password recovery link.
     </p>
 
-    <div id="recoveryRequestForm">
+    <div id="requestRecoveryForm">
 
       <label for="recoveryEmail">Email Address</label>
       <input id="recoveryEmail" type="email" autocomplete="email" required>
@@ -322,7 +322,7 @@
 
     </div>
 
-    <div class="panel">
+    <div id="campaignHistorySection" class="panel">
 
       <h2>My Campaign Enquiries</h2>
 
@@ -672,7 +672,7 @@ async function loadDashboard() {
         "Account status: " + (account.account_status || "pending").toUpperCase();
     }
 
-    const businessElement = $("dashboardBusinessName");
+    const businessElement = $("welcome");
     if (businessElement) {
       businessElement.textContent = account.business_name || "";
     }
