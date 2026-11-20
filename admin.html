@@ -1,0 +1,722 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101629">
+  <title>ALKETUM | Admin Review Dashboard</title>
+  <meta name="description" content="Secure ALKETUM client and campaign administration dashboard.">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0b1020;
+      color: #edf1fa;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      margin: auto;
+      padding: 22px 16px 50px;
+    }
+
+    header {
+      padding: 22px 0;
+      border-bottom: 1px solid #303a50;
+      margin-bottom: 25px;
+    }
+
+    .brand {
+      color: #ffffff;
+      font-size: 23px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      color: #9daac1;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    h1 { font-size: 25px; margin: 0 0 8px; }
+    h2 { font-size: 19px; margin: 0 0 14px; }
+    h3 { font-size: 15px; margin: 0 0 8px; }
+
+    .muted { color: #aab5ca; font-size: 13px; }
+
+    .panel {
+      background: #151e32;
+      border: 1px solid #303c55;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      margin: 9px 0 14px;
+      border-radius: 7px;
+      border: 1px solid #45536c;
+      background: #0c1426;
+      color: white;
+      font-size: 16px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 7px;
+      padding: 12px 17px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin: 4px 5px 4px 0;
+    }
+
+    .primary {
+      background: #d6b45f;
+      color: #111827;
+    }
+
+    .secondary {
+      background: #293752;
+      color: white;
+      border: 1px solid #465674;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .message {
+      display: none;
+      padding: 12px;
+      border-radius: 7px;
+      margin: 14px 0;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+
+    .error {
+      display: block;
+      background: #49232c;
+      border: 1px solid #9c4657;
+      color: #ffdce2;
+    }
+
+    .success {
+      display: block;
+      background: #173c32;
+      border: 1px solid #367c61;
+      color: #d4ffeb;
+    }
+
+    .hidden { display: none !important; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 13px;
+      margin: 20px 0;
+    }
+
+    .stat {
+      background: #151e32;
+      border: 1px solid #303c55;
+      padding: 17px;
+      border-radius: 10px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 27px;
+      color: #e6c66f;
+      margin-top: 5px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 11px 10px;
+      border-bottom: 1px solid #303c55;
+      vertical-align: top;
+    }
+
+    th {
+      color: #e6c66f;
+      background: #10182a;
+    }
+
+    td { color: #dce3f1; }
+
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 20px;
+      background: #293752;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    footer {
+      color: #8491a9;
+      font-size: 12px;
+      text-align: center;
+      padding-top: 15px;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 16px 12px 35px; }
+      .panel { padding: 15px; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <header>
+      <div class="brand">ALKETUM</div>
+      <div class="subtitle">MEDIA GROUP | ADMINISTRATION</div>
+    </header>
+
+    <section id="loginSection" class="panel">
+      <h1>Administrator Login</h1>
+      <p class="muted">
+        Authorised ALKETUM workspace owners and administrators only.
+      </p>
+
+      <form id="loginForm">
+        <label for="adminEmail">Email address</label>
+        <input
+          type="email"
+          id="adminEmail"
+          autocomplete="username"
+          required
+        >
+
+        <label for="adminPassword">Password</label>
+        <input
+          type="password"
+          id="adminPassword"
+          autocomplete="current-password"
+          required
+        >
+
+        <button type="submit" class="primary" id="loginButton">
+          Sign in securely
+        </button>
+      </form>
+
+      <div id="loginMessage" class="message" role="alert"></div>
+    </section>
+
+    <section id="dashboardSection" class="hidden">
+
+      <div class="panel">
+        <div class="top-actions">
+          <div>
+            <h1>Admin Review Dashboard</h1>
+            <div class="muted" id="adminIdentity">
+              Administrator authenticated
+            </div>
+          </div>
+
+          <div>
+            <button id="refreshButton" class="secondary">
+              Refresh data
+            </button>
+            <button id="logoutButton" class="secondary">
+              Sign out
+            </button>
+          </div>
+        </div>
+
+        <div id="dashboardMessage" class="message" role="status"></div>
+      </div>
+
+      <div class="grid">
+        <div class="stat">
+          <span class="muted">Client accounts</span>
+          <strong id="totalAccounts">0</strong>
+        </div>
+
+        <div class="stat">
+          <span class="muted">Pending accounts</span>
+          <strong id="pendingAccounts">0</strong>
+        </div>
+
+        <div class="stat">
+          <span class="muted">Campaign enquiries</span>
+          <strong id="totalCampaigns">0</strong>
+        </div>
+
+        <div class="stat">
+          <span class="muted">Payment records</span>
+          <strong id="totalPayments">0</strong>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Client Accounts</h2>
+        <p class="muted">Registration and account status overview.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody id="accountsTable">
+              <tr><td colspan="6">Loading accounts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Campaign Enquiries</h2>
+        <p class="muted">Review client campaign requests and their current status.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Service</th>
+                <th>Campaign details</th>
+                <th>Status</th>
+                <th>Requested</th>
+              </tr>
+            </thead>
+            <tbody id="campaignsTable">
+              <tr><td colspan="5">Loading campaigns...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Payment Records</h2>
+        <p class="muted">
+          Payment information is displayed for review. No payment changes can be made here.
+        </p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Campaign ID</th>
+                <th>Amount</th>
+                <th>Currency</th>
+                <th>Provider</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th>Verified at</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTable">
+              <tr><td colspan="7">Loading payments...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <footer>
+      ALKETUM MEDIA GROUP · BUILD. OWN. SERVE. SCALE.
+    </footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    // Existing HEADQUARTERS Supabase project.
+    const SUPABASE_URL =
+      "https://wukojdsqimrzoakdmilr.supabase.co";
+
+    const SUPABASE_ANON_KEY =
+      "sb_publishable_4Rj9ZJ56xeDyPEw7ZQdbWA_endWv91u";
+
+    const db = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+    const $ = (id) => document.getElementById(id);
+
+    let currentUser = null;
+    let loading = false;
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function showMessage(elementId, message, isError = false) {
+      const element = $(elementId);
+      element.textContent = message;
+      element.className = "message " + (isError ? "error" : "success");
+    }
+
+    function clearMessage(elementId) {
+      const element = $(elementId);
+      element.textContent = "";
+      element.className = "message";
+    }
+
+    function formatDate(value) {
+      if (!value) return "—";
+
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) return "—";
+
+      return date.toLocaleString("en-ZA");
+    }
+
+    function statusLabel(value) {
+      return '<span class="status">' +
+        escapeHTML(value || "unknown") +
+        "</span>";
+    }
+
+    function showLogin() {
+      $("loginSection").classList.remove("hidden");
+      $("dashboardSection").classList.add("hidden");
+      currentUser = null;
+    }
+
+    function showDashboard() {
+      $("loginSection").classList.add("hidden");
+      $("dashboardSection").classList.remove("hidden");
+    }
+
+    async function verifyAdministrator() {
+      const { data: userResult, error: userError } =
+        await db.auth.getUser();
+
+      if (userError || !userResult.user) {
+        showLogin();
+        return false;
+      }
+
+      currentUser = userResult.user;
+
+      const { data, error } = await db.rpc(
+        "is_alketum_admin"
+      );
+
+      if (error) {
+        throw new Error(
+          "Administrator verification failed: " + error.message
+        );
+      }
+
+      if (data !== true) {
+        await db.auth.signOut();
+        showLogin();
+        showMessage(
+          "loginMessage",
+          "Access denied. This account is not an authorised ALKETUM administrator.",
+          true
+        );
+        return false;
+      }
+
+      $("adminIdentity").textContent =
+        "Signed in as " + currentUser.email +
+        " · ALKETUM administrator";
+
+      showDashboard();
+      return true;
+    }
+
+    async function loadDashboard() {
+      if (loading) return;
+
+      loading = true;
+      $("refreshButton").disabled = true;
+      clearMessage("dashboardMessage");
+
+      try {
+        const { data: accounts, error: accountError } =
+          await db
+            .from("client_accounts")
+            .select(
+              "id, business_name, contact_name, email, phone, account_status, created_at"
+            )
+            .order("created_at", { ascending: false });
+
+        if (accountError) throw accountError;
+
+        const { data: campaigns, error: campaignError } =
+          await db
+            .from("client_campaigns")
+            .select(
+              "id, client_account_id, service_name, campaign_details, status, requested_at, activation_date, expiry_date"
+            )
+            .order("requested_at", { ascending: false });
+
+        if (campaignError) throw campaignError;
+
+        const { data: payments, error: paymentError } =
+          await db
+            .from("client_payments")
+            .select(
+              "id, client_campaign_id, amount, currency, provider, provider_reference, status, verified_at"
+            )
+            .order("created_at", { ascending: false });
+
+        if (paymentError) throw paymentError;
+
+        renderAccounts(accounts || []);
+        renderCampaigns(campaigns || [], accounts || []);
+        renderPayments(payments || []);
+
+        $("totalAccounts").textContent = accounts.length;
+        $("pendingAccounts").textContent =
+          accounts.filter(a => a.account_status === "pending").length;
+        $("totalCampaigns").textContent = campaigns.length;
+        $("totalPayments").textContent = payments.length;
+
+        showMessage(
+          "dashboardMessage",
+          "Dashboard data loaded successfully."
+        );
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          "Could not load dashboard data: " +
+            (error.message || "Unknown error"),
+          true
+        );
+      } finally {
+        loading = false;
+        $("refreshButton").disabled = false;
+      }
+    }
+
+    function renderAccounts(accounts) {
+      const body = $("accountsTable");
+
+      if (!accounts.length) {
+        body.innerHTML =
+          '<tr><td colspan="6">No client accounts found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = accounts.map(account => `
+        <tr>
+          <td>${escapeHTML(account.business_name)}</td>
+          <td>${escapeHTML(account.contact_name)}</td>
+          <td>${escapeHTML(account.email || "—")}</td>
+          <td>${escapeHTML(account.phone || "—")}</td>
+          <td>${statusLabel(account.account_status)}</td>
+          <td>${escapeHTML(formatDate(account.created_at))}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderCampaigns(campaigns, accounts) {
+      const body = $("campaignsTable");
+
+      if (!campaigns.length) {
+        body.innerHTML =
+          '<tr><td colspan="5">No campaign enquiries found.</td></tr>';
+        return;
+      }
+
+      const accountMap = new Map(
+        accounts.map(account => [
+          account.id,
+          account.business_name
+        ])
+      );
+
+      body.innerHTML = campaigns.map(campaign => `
+        <tr>
+          <td>${escapeHTML(
+            accountMap.get(campaign.client_account_id) || "Unknown account"
+          )}</td>
+          <td>${escapeHTML(campaign.service_name)}</td>
+          <td>${escapeHTML(campaign.campaign_details || "—")}</td>
+          <td>${statusLabel(campaign.status)}</td>
+          <td>${escapeHTML(formatDate(campaign.requested_at))}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderPayments(payments) {
+      const body = $("paymentsTable");
+
+      if (!payments.length) {
+        body.innerHTML =
+          '<tr><td colspan="7">No payment records found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = payments.map(payment => `
+        <tr>
+          <td>${escapeHTML(payment.client_campaign_id)}</td>
+          <td>${escapeHTML(payment.amount)}</td>
+          <td>${escapeHTML(payment.currency)}</td>
+          <td>${escapeHTML(payment.provider || "—")}</td>
+          <td>${escapeHTML(payment.provider_reference || "—")}</td>
+          <td>${statusLabel(payment.status)}</td>
+          <td>${escapeHTML(formatDate(payment.verified_at))}</td>
+        </tr>
+      `).join("");
+    }
+
+    $("loginForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const email = $("adminEmail").value.trim();
+      const password = $("adminPassword").value;
+      const button = $("loginButton");
+
+      clearMessage("loginMessage");
+      button.disabled = true;
+      button.textContent = "Signing in...";
+
+      try {
+        const { error } = await db.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) throw error;
+
+        const authorised = await verifyAdministrator();
+
+        if (authorised) {
+          $("adminPassword").value = "";
+          await loadDashboard();
+        }
+
+      } catch (error) {
+        showMessage(
+          "loginMessage",
+          error.message || "Sign-in failed.",
+          true
+        );
+      } finally {
+        button.disabled = false;
+        button.textContent = "Sign in securely";
+      }
+    });
+
+    $("refreshButton").addEventListener("click", async () => {
+      const authorised = await verifyAdministrator();
+
+      if (authorised) {
+        await loadDashboard();
+      }
+    });
+
+    $("logoutButton").addEventListener("click", async () => {
+      $("logoutButton").disabled = true;
+
+      const { error } = await db.auth.signOut();
+
+      $("logoutButton").disabled = false;
+
+      if (error) {
+        showMessage(
+          "dashboardMessage",
+          "Sign-out failed: " + error.message,
+          true
+        );
+        return;
+      }
+
+      showLogin();
+      showMessage(
+        "loginMessage",
+        "You have signed out successfully."
+      );
+    });
+
+    // Check an existing Supabase session when the page opens.
+    async function initialiseAdmin() {
+      try {
+        const { data, error } = await db.auth.getSession();
+
+        if (error) throw error;
+
+        if (data.session) {
+          const authorised = await verifyAdministrator();
+
+          if (authorised) {
+            await loadDashboard();
+          }
+        } else {
+          showLogin();
+        }
+
+      } catch (error) {
+        showLogin();
+        showMessage(
+          "loginMessage",
+          error.message || "Could not initialise administrator access.",
+          true
+        );
+      }
+    }
+
+    // If the authentication session changes, re-check authorisation.
+    db.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        showLogin();
+      }
+    });
+
+    initialiseAdmin();
+  </script>
+</body>
+</html>
