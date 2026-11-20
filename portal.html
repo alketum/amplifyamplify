@@ -116,12 +116,18 @@
     }
 
     .hidden {
-  display: none;
-}
+      display: none;
+    }
 
     .campaign {
       border-top: 1px solid #344260;
       padding: 14px 0;
+    }
+
+    .campaign-item {
+      border-top: 1px solid #344260;
+      padding: 14px 0;
+      overflow-wrap: anywhere;
     }
 
     a {
@@ -146,7 +152,7 @@
 
 <main>
 
-  <div id="message" class="status hidden" role="status"></div>
+  <div id="message" class="status hidden" role="status" aria-live="polite"></div>
 
   <!-- CLIENT REGISTRATION AND SIGN IN -->
   <section id="authPanel" class="panel">
@@ -157,7 +163,7 @@
       Register your business or sign in to manage your campaign enquiries.
     </p>
 
-    <div id="campaignSection" class="panel">
+    <div id="registrationSection">
 
       <h3>Create a client account</h3>
 
@@ -302,7 +308,8 @@
 
     </div>
 
-    <div class="panel">
+    <!-- CORRECT CAMPAIGN ENQUIRY SECTION ID -->
+    <div id="campaignSection" class="panel">
 
       <h2>Submit a Campaign Enquiry</h2>
 
@@ -322,6 +329,7 @@
 
     </div>
 
+    <!-- CAMPAIGN HISTORY -->
     <div id="campaignHistorySection" class="panel">
 
       <h2>My Campaign Enquiries</h2>
@@ -400,6 +408,7 @@ function setBusy(button, busy, label = "Please wait...") {
 
 function showAccountSetupOnly() {
   $("authPanel").style.display = "none";
+  $("recoveryPanel").style.display = "none";
   $("dashboard").style.display = "block";
   $("accountSetup").style.display = "block";
   $("campaignSection").style.display = "none";
@@ -454,7 +463,10 @@ async function register() {
   try {
     const { data, error } = await db.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        emailRedirectTo: "https://amplifyamplify.vercel.app/portal.html"
+      }
     });
 
     if (error) throw error;
@@ -606,7 +618,9 @@ async function updatePassword() {
 
     isPasswordRecovery = false;
 
-    await db.auth.signOut();
+    const { error: signOutError } = await db.auth.signOut();
+
+    if (signOutError) throw signOutError;
 
     $("recoveryPanel").style.display = "none";
     $("authPanel").style.display = "block";
@@ -634,6 +648,7 @@ async function loadDashboard() {
       currentUser = null;
       currentAccount = null;
       $("dashboard").style.display = "none";
+      $("recoveryPanel").style.display = "none";
       $("authPanel").style.display = "block";
       return;
     }
@@ -667,10 +682,10 @@ async function loadDashboard() {
     $("campaignHistorySection").style.display = "block";
 
     const statusElement = $("accountStatus");
-if (statusElement) {
-  statusElement.textContent =
-    (account.account_status || "pending").toUpperCase();
-}
+    if (statusElement) {
+      statusElement.textContent =
+        (account.account_status || "pending").toUpperCase();
+    }
 
     const businessElement = $("welcome");
     if (businessElement) {
@@ -801,7 +816,8 @@ async function logout() {
   }
 }
 
-// Button and link events
+// BUTTON AND LINK EVENTS
+
 $("registerButton").addEventListener("click", register);
 $("loginButton").addEventListener("click", login);
 $("sendRecoveryButton").addEventListener("click", sendPasswordRecovery);
@@ -831,7 +847,8 @@ $("backToLoginButton").addEventListener("click", () => {
   clearMessage();
 });
 
-// Listen for Supabase authentication events
+// SUPABASE AUTHENTICATION EVENTS
+
 db.auth.onAuthStateChange((event, session) => {
   if (event === "PASSWORD_RECOVERY") {
     isPasswordRecovery = true;
@@ -858,10 +875,12 @@ db.auth.onAuthStateChange((event, session) => {
   }
 });
 
-// Restore an existing login session
+// RESTORE EXISTING LOGIN SESSION
+
 db.auth.getSession().then(({ data, error }) => {
   if (error) {
     console.error("Session check error:", error);
+    showMessage("Your login session could not be checked. Please refresh the page.", true);
     return;
   }
 
@@ -874,7 +893,11 @@ db.auth.getSession().then(({ data, error }) => {
     $("recoveryPanel").style.display = "none";
     $("authPanel").style.display = "block";
   }
+}).catch((error) => {
+  console.error("Session restoration error:", error);
+  showMessage("Your login session could not be restored. Please refresh the page.", true);
 });
+
 </script>
 </body>
 </html>
