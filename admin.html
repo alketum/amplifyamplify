@@ -501,7 +501,7 @@
           await db
             .from("client_campaigns")
             .select(
-              "id, client_account_id, service_name, campaign_details, status, requested_at, activation_date, expiry_date"
+              "id, client_account_id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date"
             )
             .order("requested_at", { ascending: false });
 
@@ -818,6 +818,7 @@ $("accountsTable").addEventListener("click", async (event) => {
   }
 });
 
+
 $("campaignsTable").addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-campaign-id]");
 
@@ -828,14 +829,39 @@ $("campaignsTable").addEventListener("click", async (event) => {
 
   if (!["approve", "reject"].includes(decision)) return;
 
-  const actionText =
-    decision === "approve" ? "approve this enquiry for payment" : "reject this enquiry";
+  const actionText = decision === "approve"
+    ? "approve this enquiry for payment"
+    : "reject this enquiry";
 
   const confirmed = window.confirm(
     "Are you sure you want to " + actionText + "?"
   );
 
   if (!confirmed) return;
+
+  let approvedAmount = null;
+
+  if (decision === "approve") {
+    const amountInput = window.prompt(
+      "Enter the ALKETUM-approved campaign price in ZAR:"
+    );
+
+    if (amountInput === null) return;
+
+    approvedAmount = Number(amountInput.trim());
+
+    if (
+      !Number.isFinite(approvedAmount) ||
+      approvedAmount <= 0
+    ) {
+      showMessage(
+        "dashboardMessage",
+        "Please enter a valid campaign amount greater than zero.",
+        true
+      );
+      return;
+    }
+  }
 
   button.disabled = true;
 
@@ -844,7 +870,8 @@ $("campaignsTable").addEventListener("click", async (event) => {
       "admin_review_client_campaign",
       {
         p_campaign_id: campaignId,
-        p_decision: decision
+        p_decision: decision,
+        p_approved_amount: approvedAmount
       }
     );
 
@@ -859,7 +886,9 @@ $("campaignsTable").addEventListener("click", async (event) => {
     showMessage(
       "dashboardMessage",
       decision === "approve"
-        ? "Enquiry approved for payment. Campaign is not activated."
+        ? "Enquiry approved for payment at R" +
+          approvedAmount.toFixed(2) +
+          ". Campaign is not activated."
         : "Campaign enquiry rejected."
     );
 
@@ -873,6 +902,7 @@ $("campaignsTable").addEventListener("click", async (event) => {
     button.disabled = false;
   }
 });
+
 
 $("paymentsTable").addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-payment-id]");
