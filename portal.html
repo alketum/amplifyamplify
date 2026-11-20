@@ -6,9 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AMPLIFY AMPLIFY | Client Portal</title>
   <meta name="description" content="AMPLIFY AMPLIFY secure business client portal.">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -16,15 +19,31 @@
       color: #f4f6ff;
       min-height: 100vh;
     }
+
     header {
       padding: 22px 16px;
       text-align: center;
       background: #111a32;
       border-bottom: 1px solid #293657;
     }
-    header h1 { margin: 0; font-size: 25px; letter-spacing: 1px; }
-    header p { color: #aab8d8; margin: 8px 0 0; }
-    main { max-width: 680px; margin: 28px auto; padding: 0 15px 40px; }
+
+    header h1 {
+      margin: 0;
+      font-size: 25px;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      color: #aab8d8;
+      margin: 8px 0 0;
+    }
+
+    main {
+      max-width: 680px;
+      margin: 28px auto;
+      padding: 0 15px 40px;
+    }
+
     .panel {
       background: #141e38;
       border: 1px solid #293657;
@@ -32,8 +51,18 @@
       padding: 22px;
       margin-bottom: 18px;
     }
-    h2 { margin-top: 0; font-size: 21px; }
-    label { display: block; margin: 14px 0 6px; color: #dce5ff; }
+
+    h2 {
+      margin-top: 0;
+      font-size: 21px;
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      color: #dce5ff;
+    }
+
     input, textarea {
       width: 100%;
       padding: 13px;
@@ -43,7 +72,12 @@
       color: white;
       font-size: 16px;
     }
-    textarea { min-height: 100px; resize: vertical; }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
     button {
       border: 0;
       border-radius: 8px;
@@ -56,9 +90,23 @@
       font-weight: bold;
       cursor: pointer;
     }
-    button.secondary { background: #293957; color: white; }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .muted { color: #aab8d8; font-size: 14px; line-height: 1.5; }
+
+    button.secondary {
+      background: #293957;
+      color: white;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .muted {
+      color: #aab8d8;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
     .status {
       padding: 12px;
       background: #0b1429;
@@ -66,15 +114,29 @@
       margin: 12px 0;
       overflow-wrap: anywhere;
     }
-    .hidden { display: none !important; }
+
+    .hidden {
+      display: none !important;
+    }
+
     .campaign {
       border-top: 1px solid #344260;
       padding: 14px 0;
     }
-    a { color: #53d7f0; }
-    footer { text-align: center; color: #8291b2; padding: 20px; font-size: 13px; }
+
+    a {
+      color: #53d7f0;
+    }
+
+    footer {
+      text-align: center;
+      color: #8291b2;
+      padding: 20px;
+      font-size: 13px;
+    }
   </style>
 </head>
+
 <body>
 
 <header>
@@ -83,13 +145,20 @@
 </header>
 
 <main>
+
   <div id="message" class="status hidden" role="status"></div>
 
+  <!-- CLIENT REGISTRATION AND SIGN IN -->
   <section id="authPanel" class="panel">
+
     <h2>Client Account Access</h2>
-    <p class="muted">Register your business or sign in to manage your campaign enquiries.</p>
+
+    <p class="muted">
+      Register your business or sign in to manage your campaign enquiries.
+    </p>
 
     <div id="registerForm">
+
       <h3>Create a client account</h3>
 
       <label for="businessName">Business / Organisation Name</label>
@@ -107,13 +176,20 @@
       <label for="registerPassword">Create Password</label>
       <input id="registerPassword" type="password" minlength="8" autocomplete="new-password" required>
 
-      <button id="registerButton" type="button">Register My Business</button>
-      <p class="muted">Your account will begin with pending status. Registration does not automatically activate paid services.</p>
+      <button id="registerButton" type="button">
+        Register My Business
+      </button>
+
+      <p class="muted">
+        Your account will begin with pending status. Registration does not automatically activate paid services.
+      </p>
+
     </div>
 
     <hr style="border-color:#344260; margin:25px 0">
 
     <div id="loginForm">
+
       <h3>Already registered? Sign in</h3>
 
       <label for="loginEmail">Email Address</label>
@@ -122,29 +198,38 @@
       <label for="loginPassword">Password</label>
       <input id="loginPassword" type="password" autocomplete="current-password">
 
-      <button id="loginButton" type="button">Sign In</button><p class="muted" style="text-align:center">
-  <a href="#" id="forgotPasswordLink">Forgot Password?</a>
-</p>
+      <button id="loginButton" type="button">Sign In</button>
+
+      <p class="muted" style="text-align:center">
+        <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+      </p>
+
     </div>
+
   </section>
 
-  <section id="dashboard" class="hidden">
+  <!-- PASSWORD RECOVERY -->
   <section id="passwordRecoveryPanel" class="panel hidden">
+
     <h2>Reset Your Password</h2>
+
     <p class="muted">
       Enter your registered email address to receive a secure password recovery link.
     </p>
 
     <div id="recoveryRequestForm">
+
       <label for="recoveryEmail">Email Address</label>
       <input id="recoveryEmail" type="email" autocomplete="email" required>
 
       <button id="sendRecoveryButton" type="button">
         Send Recovery Email
       </button>
+
     </div>
 
     <div id="newPasswordForm" class="hidden">
+
       <label for="newPassword">New Password</label>
       <input id="newPassword" type="password" minlength="8" autocomplete="new-password">
 
@@ -154,74 +239,108 @@
       <button id="updatePasswordButton" type="button">
         Update Password
       </button>
+
     </div>
 
     <button id="backToLoginButton" class="secondary" type="button">
       Back to Sign In
     </button>
+
   </section>
 
+  <!-- CLIENT DASHBOARD -->
+  <section id="dashboard" class="hidden">
 
-<div id="accountSetup" class="panel hidden">
-  <h2>Complete Your Business Registration</h2>
-  <p class="muted">
-    Your email has been confirmed. Please provide your business details
-    to finish creating your client account.
-  </p>
+    <div id="accountSetup" class="panel hidden">
 
-  <label for="setupBusinessName">Business / Organisation Name</label>
-  <input id="setupBusinessName" maxlength="160" required>
+      <h2>Complete Your Business Registration</h2>
 
-  <label for="setupContactName">Contact Person</label>
-  <input id="setupContactName" maxlength="160" required>
+      <p class="muted">
+        Your email has been confirmed. Please provide your business details to finish creating your client account.
+      </p>
 
-  <label for="setupEmail">Email Address</label>
-  <input id="setupEmail" type="email" required>
+      <label for="setupBusinessName">Business / Organisation Name</label>
+      <input id="setupBusinessName" maxlength="160" required>
 
-  <label for="setupPhone">WhatsApp / Phone Number</label>
-  <input id="setupPhone" type="tel">
+      <label for="setupContactName">Contact Person</label>
+      <input id="setupContactName" maxlength="160" required>
 
-  <button id="completeAccountButton" type="button">
-    Complete Business Registration
-  </button>
+      <label for="setupEmail">Email Address</label>
+      <input id="setupEmail" type="email" required>
 
-  <p class="muted">
-    Your account will remain pending until reviewed by ALKETUM MEDIA GROUP.
-  </p>
-</div>
+      <label for="setupPhone">WhatsApp / Phone Number</label>
+      <input id="setupPhone" type="tel">
+
+      <button id="completeAccountButton" type="button">
+        Complete Business Registration
+      </button>
+
+      <p class="muted">
+        Your account will remain pending until reviewed by ALKETUM MEDIA GROUP.
+      </p>
+
+    </div>
+
     <div class="panel">
+
       <h2>Business Dashboard</h2>
+
       <p id="welcome" class="muted"></p>
+
       <div class="status">
         <strong>Account status:</strong>
         <span id="accountStatus">Loading...</span>
       </div>
-      <p class="muted">Your account and campaign services are subject to ALKETUM MEDIA GROUP review and approval.</p>
-      <button id="logoutButton" class="secondary" type="button">Sign Out</button>
+
+      <p class="muted">
+        Your account and campaign services are subject to ALKETUM MEDIA GROUP review and approval.
+      </p>
+
+      <button id="logoutButton" class="secondary" type="button">
+        Sign Out
+      </button>
+
     </div>
 
     <div class="panel">
+
       <h2>Submit a Campaign Enquiry</h2>
+
       <label for="serviceName">Service Requested</label>
       <input id="serviceName" maxlength="160" placeholder="e.g. Business Promotion, Artist Promotion">
 
       <label for="campaignDetails">Campaign Details</label>
       <textarea id="campaignDetails" maxlength="5000" placeholder="Tell us what you would like AMPLIFY AMPLIFY to help you promote."></textarea>
 
-      <button id="campaignButton" type="button">Submit Campaign Enquiry</button>
-      <p class="muted">Submitting an enquiry does not confirm payment, approval or campaign activation.</p>
+      <button id="campaignButton" type="button">
+        Submit Campaign Enquiry
+      </button>
+
+      <p class="muted">
+        Submitting an enquiry does not confirm payment, approval or campaign activation.
+      </p>
+
     </div>
 
     <div class="panel">
+
       <h2>My Campaign Enquiries</h2>
-      <div id="campaignList" class="muted">Loading your enquiries...</div>
+
+      <div id="campaignList" class="muted">
+        Loading your enquiries...
+      </div>
+
     </div>
+
   </section>
 
   <p class="muted" style="text-align:center">
     Need assistance?
-    <a href="https://wa.me/27661498648" target="_blank" rel="noopener">Contact AMPLIFY AMPLIFY on WhatsApp</a>
+    <a href="https://wa.me/27661498648" target="_blank" rel="noopener">
+      Contact AMPLIFY AMPLIFY on WhatsApp
+    </a>
   </p>
+
 </main>
 
 <footer>
@@ -229,170 +348,171 @@
 </footer>
 
 <script>
-  
+
 const SUPABASE_URL = "https://wukojdsqimrzoakdmilr.supabase.co";
-const SUPABASE_KEY = "sb_publishable_4Rj9ZJ56xeDyPEw7ZQdbWA_endWv91u";
+const SUPABASE_ANON_KEY = "sb_publishable_4Rj9ZJ56xeDyPEw7ZQdbWA_endWv91u";
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let currentUser = null;
-let currentAccount = null;
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
 
 const $ = (id) => document.getElementById(id);
 
+let currentUser = null;
+let currentAccount = null;
+let isPasswordRecovery = false;
+
 function showMessage(message, isError = false) {
   const box = $("message");
+  if (!box) return;
+
   box.textContent = message;
-  box.classList.remove("hidden");
-  box.style.border = isError
-    ? "1px solid #e36b6b"
-    : "1px solid #28b9d8";
+  box.style.color = isError ? "#ff7777" : "#80e0a0";
+  box.style.display = "block";
 }
 
 function clearMessage() {
-  $("message").classList.add("hidden");
+  const box = $("message");
+  if (!box) return;
+
+  box.textContent = "";
+  box.style.display = "none";
 }
 
-function setBusy(button, busy, label) {
-  button.disabled = busy;
+function setBusy(button, busy, label = "Please wait...") {
+  if (!button) return;
 
   if (busy) {
-    button.dataset.oldLabel = button.textContent;
+    if (!button.dataset.oldLabel) {
+      button.dataset.oldLabel = button.textContent;
+    }
+    button.disabled = true;
     button.textContent = label;
   } else {
-    button.textContent = button.dataset.oldLabel || label;
+    button.disabled = false;
+    if (button.dataset.oldLabel) {
+      button.textContent = button.dataset.oldLabel;
+      delete button.dataset.oldLabel;
+    }
   }
 }
 
-function showAccountSetupOnly(show) {
-  Array.from($("dashboard").children).forEach((element) => {
-    if (element.id === "accountSetup") {
-      element.classList.toggle("hidden", !show);
-    } else {
-      element.classList.toggle("hidden", show);
-    }
-  });
+function showAccountSetupOnly() {
+  $("authPanel").style.display = "none";
+  $("dashboard").style.display = "block";
+  $("accountSetup").style.display = "block";
+  $("campaignSection").style.display = "none";
+  $("campaignHistorySection").style.display = "none";
 }
 
 function prepareAccountSetup() {
-  $("setupEmail").value = currentUser?.email || "";
-  $("setupEmail").readOnly = true;
-  $("authPanel").classList.add("hidden");
-  $("dashboard").classList.remove("hidden");
-  showAccountSetupOnly(true);
+  if (!currentUser) return;
+
+  $("setupEmail").value = currentUser.email || "";
+  $("setupBusinessName").value = "";
+  $("setupContactName").value = "";
+  $("setupPhone").value = "";
 }
 
-async function createBusinessAccount(details, button) {
-  if (!currentUser || !currentUser.id || !currentUser.email) {
-    throw new Error("Please sign in again before completing registration.");
-  }
+async function createBusinessAccount(details) {
+  const { data, error } = await db.rpc("register_client_account", {
+    p_business_name: details.businessName,
+    p_contact_name: details.contactName,
+    p_email: currentUser.email,
+    p_phone: details.phone || ""
+  });
 
-  const business = details.business.trim();
-  const contact = details.contact.trim();
-  const phone = details.phone.trim();
+  if (error) throw error;
 
-  if (!business || business.length > 160) {
-    throw new Error("Please enter a valid business name.");
-  }
-
-  if (!contact || contact.length > 160) {
-    throw new Error("Please enter a valid contact name.");
-  }
-
-  setBusy(button, true, "Creating account...");
-
-  try {
-    const { error } = await db.rpc("register_client_account", {
-      p_business_name: business,
-      p_contact_name: contact,
-      p_email: currentUser.email,
-      p_phone: phone || null
-    });
-
-    if (error) throw error;
-
-    showMessage(
-      "Your business account has been registered and is awaiting ALKETUM review."
-    );
-
-    await loadDashboard();
-  } finally {
-    setBusy(button, false, button.id === "registerButton"
-      ? "Register My Business"
-      : "Complete Business Registration");
-  }
+  return data;
 }
 
 async function register() {
   clearMessage();
 
-  const business = $("businessName").value.trim();
-  const contact = $("contactName").value.trim();
+  const businessName = $("businessName").value.trim();
+  const contactName = $("contactName").value.trim();
   const email = $("registerEmail").value.trim();
   const phone = $("phone").value.trim();
   const password = $("registerPassword").value;
+
   const button = $("registerButton");
 
-  if (!business || !contact || !email || password.length < 8) {
-    showMessage(
-      "Please complete the required fields. Password must be at least 8 characters.",
-      true
-    );
+  if (!businessName || !contactName || !email || !password) {
+    showMessage("Please complete all required registration fields.", true);
     return;
   }
 
-  setBusy(button, true, "Registering...");
+  if (password.length < 8) {
+    showMessage("Your password must contain at least 8 characters.", true);
+    return;
+  }
+
+  setBusy(button, true, "Creating account...");
 
   try {
     const { data, error } = await db.auth.signUp({
       email,
-      password,
-      options: {
-        data: { full_name: contact }
-      }
+      password
     });
 
     if (error) throw error;
 
-    if (!data.session) {
-      showMessage(
-        "Registration started. Please confirm your email, then return and sign in. You will be asked to complete your business registration."
-      );
-      return;
+    if (data.session && data.user) {
+      currentUser = data.user;
+
+      await createBusinessAccount({
+        businessName,
+        contactName,
+        phone
+      });
+
+      showMessage("Registration successful. Your client account is pending ALKETUM approval.");
+      await loadDashboard();
+    } else {
+      showMessage("Registration submitted. Please check your email to confirm your login before continuing.");
     }
-
-    currentUser = data.user;
-
-    await createBusinessAccount(
-      { business, contact, phone },
-      button
-    );
   } catch (error) {
     showMessage(error.message || "Registration could not be completed.", true);
   } finally {
-    setBusy(button, false, "Register My Business");
+    setBusy(button, false);
   }
 }
 
 async function completeAccount() {
   clearMessage();
 
+  if (!currentUser) {
+    showMessage("Please sign in before completing your account.", true);
+    return;
+  }
+
+  const businessName = $("setupBusinessName").value.trim();
+  const contactName = $("setupContactName").value.trim();
+  const phone = $("setupPhone").value.trim();
   const button = $("completeAccountButton");
 
+  if (!businessName || !contactName) {
+    showMessage("Please enter your business name and contact name.", true);
+    return;
+  }
+
+  setBusy(button, true, "Saving details...");
+
   try {
-    await createBusinessAccount(
-      {
-        business: $("setupBusinessName").value,
-        contact: $("setupContactName").value,
-        phone: $("setupPhone").value
-      },
-      button
-    );
+    await createBusinessAccount({
+      businessName,
+      contactName,
+      phone
+    });
+
+    showMessage("Your business details have been submitted. Your account is pending ALKETUM approval.");
+    await loadDashboard();
   } catch (error) {
-    showMessage(
-      error.message || "Business registration could not be completed.",
-      true
-    );
+    showMessage(error.message || "Your account details could not be saved.", true);
+  } finally {
+    setBusy(button, false);
   }
 }
 
@@ -421,96 +541,175 @@ async function login() {
     currentUser = data.user;
     await loadDashboard();
   } catch (error) {
-    showMessage(error.message || "Sign-in failed.", true);
+    showMessage(error.message || "Sign-in failed. Please check your details.", true);
   } finally {
-    setBusy(button, false, "Sign In");
+    setBusy(button, false);
+  }
+}
+
+async function sendPasswordRecovery() {
+  clearMessage();
+
+  const email = $("recoveryEmail").value.trim();
+  const button = $("sendRecoveryButton");
+
+  if (!email) {
+    showMessage("Please enter the email address linked to your account.", true);
+    return;
+  }
+
+  setBusy(button, true, "Sending recovery link...");
+
+  try {
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://amplifyamplify.vercel.app/portal.html"
+    });
+
+    if (error) throw error;
+
+    showMessage("If an account exists for this email, a password recovery link will be sent. Please check your inbox.");
+  } catch (error) {
+    showMessage(error.message || "The recovery request could not be sent.", true);
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+async function updatePassword() {
+  clearMessage();
+
+  const password = $("newPassword").value;
+  const confirmPassword = $("confirmNewPassword").value;
+  const button = $("updatePasswordButton");
+
+  if (password.length < 8) {
+    showMessage("Your new password must contain at least 8 characters.", true);
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showMessage("The passwords do not match.", true);
+    return;
+  }
+
+  setBusy(button, true, "Updating password...");
+
+  try {
+    const { error } = await db.auth.updateUser({
+      password
+    });
+
+    if (error) throw error;
+
+    $("newPassword").value = "";
+    $("confirmNewPassword").value = "";
+
+    isPasswordRecovery = false;
+
+    await db.auth.signOut();
+
+    $("recoveryPanel").style.display = "none";
+    $("authPanel").style.display = "block";
+    $("dashboard").style.display = "none";
+
+    showMessage("Your password has been updated. You can now sign in using your new password.");
+  } catch (error) {
+    showMessage(error.message || "Your password could not be updated.", true);
+  } finally {
+    setBusy(button, false);
   }
 }
 
 async function loadDashboard() {
+  if (isPasswordRecovery) return;
+
   clearMessage();
 
-  const { data: userData, error: userError } =
-    await db.auth.getUser();
+  try {
+    const { data: userData, error: userError } = await db.auth.getUser();
 
-  if (userError || !userData.user) {
-    currentUser = null;
-    currentAccount = null;
-    $("dashboard").classList.add("hidden");
-    $("authPanel").classList.remove("hidden");
-    return;
+    if (userError) throw userError;
+
+    if (!userData.user) {
+      currentUser = null;
+      currentAccount = null;
+      $("dashboard").style.display = "none";
+      $("authPanel").style.display = "block";
+      return;
+    }
+
+    currentUser = userData.user;
+
+    const { data: account, error } = await db
+      .from("client_accounts")
+      .select("*")
+      .eq("auth_user_id", currentUser.id)
+      .maybeSingle();
+
+    if (isPasswordRecovery) return;
+
+    if (error) throw error;
+
+    if (!account) {
+      currentAccount = null;
+      prepareAccountSetup();
+      showAccountSetupOnly();
+      return;
+    }
+
+    currentAccount = account;
+
+    $("authPanel").style.display = "none";
+    $("recoveryPanel").style.display = "none";
+    $("dashboard").style.display = "block";
+    $("accountSetup").style.display = "none";
+    $("campaignSection").style.display = "block";
+    $("campaignHistorySection").style.display = "block";
+
+    const statusElement = $("accountStatus");
+    if (statusElement) {
+      statusElement.textContent =
+        "Account status: " + (account.account_status || "pending").toUpperCase();
+    }
+
+    const businessElement = $("dashboardBusinessName");
+    if (businessElement) {
+      businessElement.textContent = account.business_name || "";
+    }
+
+    await loadCampaigns();
+  } catch (error) {
+    showMessage(error.message || "The client dashboard could not be loaded.", true);
   }
-
-  currentUser = userData.user;
-
-  const { data: account, error } = await db
-    .from("client_accounts")
-    .select("id,business_name,contact_name,account_status")
-    .eq("auth_user_id", currentUser.id)
-    .maybeSingle();
-
-  if (error) {
-    showMessage(error.message, true);
-    return;
-  }
-
-  if (!account) {
-    currentAccount = null;
-    prepareAccountSetup();
-
-    showMessage(
-      "Your email is confirmed. Please complete your business registration below."
-    );
-    return;
-  }
-
-  currentAccount = account;
-
-  $("authPanel").classList.add("hidden");
-  $("dashboard").classList.remove("hidden");
-  showAccountSetupOnly(false);
-
-  $("welcome").textContent =
-    "Welcome, " + account.contact_name + " · " + account.business_name;
-
-  $("accountStatus").textContent =
-    account.account_status.toUpperCase();
-
-  await loadCampaigns();
 }
 
 async function submitCampaign() {
   clearMessage();
 
-  if (!currentAccount) {
-    showMessage(
-      "Your business account could not be found. Please sign in again.",
-      true
-    );
+  if (!currentUser || !currentAccount) {
+    showMessage("Please sign in and complete your business account first.", true);
     return;
   }
 
-  const service = $("serviceName").value.trim();
-  const details = $("campaignDetails").value.trim();
+  const serviceName = $("serviceName").value.trim();
+  const campaignDetails = $("campaignDetails").value.trim();
   const button = $("campaignButton");
 
-  if (!service || !details) {
-    showMessage(
-      "Please enter the service requested and campaign details.",
-      true
-    );
+  if (!serviceName || !campaignDetails) {
+    showMessage("Please enter the service and campaign details.", true);
     return;
   }
 
-  setBusy(button, true, "Submitting...");
+  setBusy(button, true, "Submitting enquiry...");
 
   try {
     const { error } = await db
       .from("client_campaigns")
       .insert({
         client_account_id: currentAccount.id,
-        service_name: service,
-        campaign_details: details
+        service_name: serviceName,
+        campaign_details: campaignDetails,
+        status: "enquiry"
       });
 
     if (error) throw error;
@@ -518,106 +717,162 @@ async function submitCampaign() {
     $("serviceName").value = "";
     $("campaignDetails").value = "";
 
-    showMessage("Your campaign enquiry has been submitted.");
+    showMessage("Your campaign enquiry has been submitted. ALKETUM will review it before any campaign is activated.");
 
     await loadCampaigns();
   } catch (error) {
-    showMessage(
-      error.message || "Your enquiry could not be submitted.",
-      true
-    );
+    showMessage(error.message || "Your campaign enquiry could not be submitted.", true);
   } finally {
-    setBusy(button, false, "Submit Campaign Enquiry");
+    setBusy(button, false);
   }
 }
 
 async function loadCampaigns() {
+  if (!currentAccount) return;
+
   const list = $("campaignList");
-  list.textContent = "Loading your enquiries...";
+  if (!list) return;
 
-  const { data, error } = await db
-    .from("client_campaigns")
-    .select("service_name,campaign_details,status,requested_at")
-    .eq("client_account_id", currentAccount.id)
-    .order("requested_at", { ascending: false });
+  list.textContent = "Loading campaign enquiries...";
 
-  if (error) {
-    list.textContent = "Could not load enquiries: " + error.message;
-    return;
+  try {
+    const { data, error } = await db
+      .from("client_campaigns")
+      .select("id, service_name, campaign_details, status, requested_at")
+      .eq("client_account_id", currentAccount.id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    list.replaceChildren();
+
+    if (!data || data.length === 0) {
+      list.textContent = "You have not submitted any campaign enquiries yet.";
+      return;
+    }
+
+    data.forEach((campaign) => {
+      const item = document.createElement("div");
+      item.className = "campaign-item";
+
+      const heading = document.createElement("h3");
+      heading.textContent = campaign.service_name || "Campaign enquiry";
+
+      const details = document.createElement("p");
+      details.textContent = campaign.campaign_details || "";
+
+      const status = document.createElement("p");
+      status.textContent =
+        "Status: " + (campaign.status || "enquiry").toUpperCase();
+
+      const date = document.createElement("p");
+      date.textContent = campaign.requested_at
+        ? "Submitted: " + new Date(campaign.requested_at).toLocaleDateString()
+        : "";
+
+      item.append(heading, details, status, date);
+      list.appendChild(item);
+    });
+  } catch (error) {
+    list.textContent = "Campaign enquiries could not be loaded.";
+    console.error("Campaign loading error:", error);
   }
-
-  list.replaceChildren();
-
-  if (!data || data.length === 0) {
-    list.textContent =
-      "You have not submitted any campaign enquiries yet.";
-    return;
-  }
-
-  data.forEach((campaign) => {
-    const item = document.createElement("div");
-    item.className = "campaign";
-
-    const title = document.createElement("strong");
-    title.textContent = campaign.service_name;
-
-    const status = document.createElement("p");
-    status.textContent =
-      "Status: " + campaign.status.replaceAll("_", " ").toUpperCase();
-
-    const details = document.createElement("p");
-    details.textContent = campaign.campaign_details;
-
-    const date = document.createElement("small");
-    date.textContent =
-      new Date(campaign.requested_at).toLocaleString();
-
-    item.append(title, status, details, date);
-    list.appendChild(item);
-  });
 }
 
 async function logout() {
-  const { error } = await db.auth.signOut();
+  clearMessage();
 
-  if (error) {
-    showMessage(error.message, true);
-    return;
+  try {
+    const { error } = await db.auth.signOut();
+
+    if (error) throw error;
+
+    currentUser = null;
+    currentAccount = null;
+    isPasswordRecovery = false;
+
+    $("dashboard").style.display = "none";
+    $("recoveryPanel").style.display = "none";
+    $("authPanel").style.display = "block";
+
+    showMessage("You have signed out successfully.");
+  } catch (error) {
+    showMessage(error.message || "Sign-out failed.", true);
   }
-
-  currentUser = null;
-  currentAccount = null;
-
-  $("dashboard").classList.add("hidden");
-  $("authPanel").classList.remove("hidden");
-
-  showMessage("You have signed out.");
 }
 
+// Button and link events
 $("registerButton").addEventListener("click", register);
 $("loginButton").addEventListener("click", login);
+$("sendRecoveryButton").addEventListener("click", sendPasswordRecovery);
+$("updatePasswordButton").addEventListener("click", updatePassword);
 $("completeAccountButton").addEventListener("click", completeAccount);
 $("campaignButton").addEventListener("click", submitCampaign);
 $("logoutButton").addEventListener("click", logout);
 
-db.auth.getSession().then(({ data, error }) => {
-  if (error) {
-    showMessage(error.message, true);
-    return;
-  }
+$("forgotPasswordLink").addEventListener("click", (event) => {
+  event.preventDefault();
+  clearMessage();
 
-  if (data.session) {
-    loadDashboard();
-  }
+  $("authPanel").style.display = "none";
+  $("dashboard").style.display = "none";
+  $("recoveryPanel").style.display = "block";
+  $("requestRecoveryForm").style.display = "block";
+  $("newPasswordForm").style.display = "none";
 });
 
-db.auth.onAuthStateChange((event) => {
+$("backToLoginButton").addEventListener("click", () => {
+  isPasswordRecovery = false;
+
+  $("recoveryPanel").style.display = "none";
+  $("dashboard").style.display = "none";
+  $("authPanel").style.display = "block";
+
+  clearMessage();
+});
+
+// Listen for Supabase authentication events
+db.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    isPasswordRecovery = true;
+    currentUser = session?.user || null;
+
+    $("authPanel").style.display = "none";
+    $("dashboard").style.display = "none";
+    $("recoveryPanel").style.display = "block";
+    $("requestRecoveryForm").style.display = "none";
+    $("newPasswordForm").style.display = "block";
+
+    showMessage("Enter and confirm your new password below.");
+  }
+
   if (event === "SIGNED_OUT") {
     currentUser = null;
     currentAccount = null;
 
-    $("dashboard").classList.add("hidden");
-    $("authPanel").classList.remove("hidden");
+    if (!isPasswordRecovery) {
+      $("dashboard").style.display = "none";
+      $("recoveryPanel").style.display = "none";
+      $("authPanel").style.display = "block";
+    }
+  }
+});
+
+// Restore an existing login session
+db.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error("Session check error:", error);
+    return;
+  }
+
+  if (isPasswordRecovery) return;
+
+  if (data.session) {
+    loadDashboard();
+  } else {
+    $("dashboard").style.display = "none";
+    $("recoveryPanel").style.display = "none";
+    $("authPanel").style.display = "block";
   }
 });
 </script>
