@@ -667,10 +667,10 @@ async function loadDashboard() {
     $("campaignHistorySection").style.display = "block";
 
     const statusElement = $("accountStatus");
-    if (statusElement) {
-      statusElement.textContent =
-        "Account status: " + (account.account_status || "pending").toUpperCase();
-    }
+if (statusElement) {
+  statusElement.textContent =
+    (account.account_status || "pending").toUpperCase();
+}
 
     const businessElement = $("welcome");
     if (businessElement) {
