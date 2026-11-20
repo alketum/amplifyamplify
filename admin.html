@@ -178,6 +178,14 @@
       background: #293752;
       font-size: 11px;
       font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    .campaign-extra {
+      color: #aab5ca;
+      font-size: 12px;
+      line-height: 1.7;
+      min-width: 105px;
     }
 
     .top-actions {
@@ -297,12 +305,12 @@
             <thead>
               <tr>
                 <th>Business</th>
-<th>Contact</th>
-<th>Email</th>
-<th>Phone</th>
-<th>Status</th>
-<th>Created</th>
-<th>Admin Action</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Admin Action</th>
               </tr>
             </thead>
             <tbody id="accountsTable">
@@ -314,7 +322,10 @@
 
       <div class="panel">
         <h2>Campaign Enquiries</h2>
-        <p class="muted">Review client campaign requests and their current status.</p>
+        <p class="muted">
+          Review enquiries, approve payment, verify final approval
+          and activate campaigns.
+        </p>
 
         <div class="table-wrap">
           <table>
@@ -324,44 +335,47 @@
                 <th>Service</th>
                 <th>Campaign details</th>
                 <th>Status</th>
+                <th>Approved price</th>
+                <th>Activation</th>
+                <th>Expiry</th>
                 <th>Requested</th>
                 <th>Admin Action</th>
               </tr>
             </thead>
             <tbody id="campaignsTable">
-              <td colspan="6">Loading campaigns...</td></tr>
+              <tr><td colspan="9">Loading campaigns...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
-     
-<div class="panel">
-  <h2>Payment Records</h2>
-  <p class="muted">
-    Review submitted Yoco payment references. Verify payments only after independently confirming the transaction in Yoco.
-  </p>
+      <div class="panel">
+        <h2>Payment Records</h2>
+        <p class="muted">
+          Review submitted Yoco payment references. Verify payments
+          only after independently confirming the transaction in Yoco.
+        </p>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Campaign ID</th>
-          <th>Amount</th>
-          <th>Currency</th>
-          <th>Provider</th>
-          <th>Reference</th>
-          <th>Status</th>
-          <th>Verified at</th>
-          <th>Admin Action</th>
-        </tr>
-      </thead>
-      <tbody id="paymentsTable">
-        <tr><td colspan="8">Loading payments...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Campaign ID</th>
+                <th>Amount</th>
+                <th>Currency</th>
+                <th>Provider</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th>Verified at</th>
+                <th>Admin Action</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTable">
+              <tr><td colspan="8">Loading payments...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
     </section>
 
@@ -373,7 +387,6 @@
   <script>
     "use strict";
 
-    // Existing HEADQUARTERS Supabase project.
     const SUPABASE_URL =
       "https://wukojdsqimrzoakdmilr.supabase.co";
 
@@ -403,7 +416,8 @@
     function showMessage(elementId, message, isError = false) {
       const element = $(elementId);
       element.textContent = message;
-      element.className = "message " + (isError ? "error" : "success");
+      element.className =
+        "message " + (isError ? "error" : "success");
     }
 
     function clearMessage(elementId) {
@@ -415,11 +429,33 @@
     function formatDate(value) {
       if (!value) return "—";
 
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+        const parts = value.split("-");
+        return parts[2] + "/" + parts[1] + "/" + parts[0];
+      }
+
       const date = new Date(value);
 
       if (Number.isNaN(date.getTime())) return "—";
 
-      return date.toLocaleString("en-ZA");
+      return date.toLocaleString("en-ZA", {
+        timeZone: "Africa/Johannesburg"
+      });
+    }
+
+    function formatMoney(value) {
+      if (value === null || value === undefined || value === "") {
+        return "—";
+      }
+
+      const amount = Number(value);
+
+      if (!Number.isFinite(amount)) return "—";
+
+      return new Intl.NumberFormat("en-ZA", {
+        style: "currency",
+        currency: "ZAR"
+      }).format(amount);
     }
 
     function statusLabel(value) {
@@ -463,11 +499,13 @@
       if (data !== true) {
         await db.auth.signOut();
         showLogin();
+
         showMessage(
           "loginMessage",
           "Access denied. This account is not an authorised ALKETUM administrator.",
           true
         );
+
         return false;
       }
 
@@ -523,7 +561,10 @@
 
         $("totalAccounts").textContent = accounts.length;
         $("pendingAccounts").textContent =
-          accounts.filter(a => a.account_status === "pending").length;
+          accounts.filter(
+            account => account.account_status === "pending"
+          ).length;
+
         $("totalCampaigns").textContent = campaigns.length;
         $("totalPayments").textContent = payments.length;
 
@@ -545,436 +586,586 @@
       }
     }
 
-    
-function renderAccounts(accounts) {
-  const body = $("accountsTable");
+    function renderAccounts(accounts) {
+      const body = $("accountsTable");
 
-  if (!accounts.length) {
-    body.innerHTML =
-      '<tr><td colspan="7">No client accounts found.</td></tr>';
-    return;
-  }
-
-  body.innerHTML = accounts.map(account => {
-    let actionButton = "";
-
-    if (account.account_status === "pending") {
-      actionButton = `
-        <button
-          type="button"
-          class="primary"
-          data-account-id="${escapeHTML(account.id)}"
-          data-next-status="active">
-          Approve
-        </button>`;
-    } else if (account.account_status === "active") {
-      actionButton = `
-        <button
-          type="button"
-          class="secondary"
-          data-account-id="${escapeHTML(account.id)}"
-          data-next-status="suspended">
-          Suspend
-        </button>`;
-    } else if (account.account_status === "suspended") {
-      actionButton = `
-        <button
-          type="button"
-          class="secondary"
-          data-account-id="${escapeHTML(account.id)}"
-          data-next-status="active">
-          Reactivate
-        </button>`;
-    }
-
-    return `
-      <tr>
-        <td>${escapeHTML(account.business_name)}</td>
-        <td>${escapeHTML(account.contact_name)}</td>
-        <td>${escapeHTML(account.email || "—")}</td>
-        <td>${escapeHTML(account.phone || "—")}</td>
-        <td>${statusLabel(account.account_status)}</td>
-        <td>${escapeHTML(formatDate(account.created_at))}</td>
-        <td>${actionButton || "—"}</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-async function updateAccountStatus(accountId, nextStatus) {
-  if (!accountId) return;
-
-  const allowedStatuses = ["active", "suspended"];
-
-  if (!allowedStatuses.includes(nextStatus)) {
-    showMessage(
-      "dashboardMessage",
-      "Invalid account status requested.",
-      true
-    );
-    return;
-  }
-
-  const confirmed = window.confirm(
-    "Are you sure you want to change this client's account status to " +
-    nextStatus.toUpperCase() + "?"
-  );
-
-  if (!confirmed) return;
-
-  try {
-    const { data: userResult, error: userError } =
-      await db.auth.getUser();
-
-    if (userError || !userResult.user) {
-      throw new Error("Your administrator session has expired.");
-    }
-
-    const { data: isAdmin, error: adminError } =
-      await db.rpc("is_alketum_admin");
-
-    if (adminError) throw adminError;
-
-    if (isAdmin !== true) {
-      throw new Error("Administrator permission denied.");
-    }
-
-    const { data: account, error: accountError } =
-      await db
-        .from("client_accounts")
-        .select("id, account_status")
-        .eq("id", accountId)
-        .maybeSingle();
-
-    if (accountError) throw accountError;
-
-    if (!account) {
-      throw new Error("Client account was not found.");
-    }
-
-    const currentStatus = account.account_status;
-
-    const validTransition =
-      (currentStatus === "pending" && nextStatus === "active") ||
-      (currentStatus === "active" && nextStatus === "suspended") ||
-      (currentStatus === "suspended" && nextStatus === "active");
-
-    if (!validTransition) {
-      throw new Error(
-        "This account status has changed. Refresh and try again."
-      );
-    }
-
-    const { data: updatedAccount, error: updateError } =
-      await db
-        .from("client_accounts")
-        .update({ account_status: nextStatus })
-        .eq("id", accountId)
-        .eq("account_status", currentStatus)
-        .select("id, account_status")
-        .maybeSingle();
-
-    if (updateError) throw updateError;
-
-    if (!updatedAccount) {
-      throw new Error(
-        "The account was not updated. Refresh and check its current status."
-      );
-    }
-
-    showMessage(
-      "dashboardMessage",
-      "Client account status successfully changed to " +
-      nextStatus.toUpperCase() + "."
-    );
-
-    await loadDashboard();
-
-  } catch (error) {
-    showMessage(
-      "dashboardMessage",
-      error.message || "Could not update the client account.",
-      true
-    );
-  }
-}
-
-
-    
-function renderCampaigns(campaigns, accounts) {
-  const body = $("campaignsTable");
-
-  if (!campaigns.length) {
-    body.innerHTML =
-      '<tr><td colspan="6">No campaign enquiries found.</td></tr>';
-    return;
-  }
-
-  const accountMap = new Map(
-    accounts.map(account => [
-      account.id,
-      account.business_name
-    ])
-  );
-
-  body.innerHTML = campaigns.map(campaign => {
-    let actionButtons = "";
-
-    if (campaign.status === "enquiry") {
-      actionButtons = `
-        <button
-          type="button"
-          class="primary"
-          data-campaign-id="${escapeHTML(campaign.id)}"
-          data-decision="approve">
-          Approve for Payment
-        </button>
-        <button
-          type="button"
-          class="secondary"
-          data-campaign-id="${escapeHTML(campaign.id)}"
-          data-decision="reject">
-          Reject
-        </button>`;
-    }
-
-    return `
-      <tr>
-        <td>${escapeHTML(
-          accountMap.get(campaign.client_account_id) || "Unknown account"
-        )}</td>
-        <td>${escapeHTML(campaign.service_name)}</td>
-        <td>${escapeHTML(campaign.campaign_details || "—")}</td>
-        <td>${statusLabel(campaign.status)}</td>
-        <td>${escapeHTML(formatDate(campaign.requested_at))}</td>
-        <td>${actionButtons || "—"}</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-
-function renderPayments(payments) {
-  const body = $("paymentsTable");
-
-  if (!payments.length) {
-    body.innerHTML =
-      '<tr><td colspan="8">No payment records found.</td></tr>';
-    return;
-  }
-
-  body.innerHTML = payments.map(payment => {
-    let actionButtons = "";
-
-    if (payment.status === "pending") {
-      actionButtons = `
-        <button
-          type="button"
-          class="primary"
-          data-payment-id="${escapeHTML(payment.id)}"
-          data-decision="verify">
-          Verify Payment
-        </button>
-        <button
-          type="button"
-          class="secondary"
-          data-payment-id="${escapeHTML(payment.id)}"
-          data-decision="fail">
-          Mark Failed
-        </button>`;
-    }
-
-    return `
-      <tr>
-        <td>${escapeHTML(payment.client_campaign_id)}</td>
-        <td>${escapeHTML(payment.amount)}</td>
-        <td>${escapeHTML(payment.currency)}</td>
-        <td>${escapeHTML(payment.provider || "—")}</td>
-        <td>${escapeHTML(payment.provider_reference || "—")}</td>
-        <td>${statusLabel(payment.status)}</td>
-        <td>${escapeHTML(formatDate(payment.verified_at))}</td>
-        <td>${actionButtons || "—"}</td>
-      </tr>
-    `;
-  }).join("");
-}
-
- 
-    
-$("accountsTable").addEventListener("click", async (event) => {
-  const button = event.target.closest("button[data-account-id]");
-
-  if (!button) return;
-
-  const accountId = button.dataset.accountId;
-  const nextStatus = button.dataset.nextStatus;
-
-  button.disabled = true;
-
-  try {
-    await updateAccountStatus(accountId, nextStatus);
-  } finally {
-    button.disabled = false;
-  }
-});
-
-
-$("campaignsTable").addEventListener("click", async (event) => {
-  const button = event.target.closest("button[data-campaign-id]");
-
-  if (!button) return;
-
-  const campaignId = button.dataset.campaignId;
-  const decision = button.dataset.decision;
-
-  if (!["approve", "reject"].includes(decision)) return;
-
-  const actionText = decision === "approve"
-    ? "approve this enquiry for payment"
-    : "reject this enquiry";
-
-  const confirmed = window.confirm(
-    "Are you sure you want to " + actionText + "?"
-  );
-
-  if (!confirmed) return;
-
-  let approvedAmount = null;
-
-  if (decision === "approve") {
-    const amountInput = window.prompt(
-      "Enter the ALKETUM-approved campaign price in ZAR:"
-    );
-
-    if (amountInput === null) return;
-
-    approvedAmount = Number(amountInput.trim());
-
-    if (
-      !Number.isFinite(approvedAmount) ||
-      approvedAmount <= 0
-    ) {
-      showMessage(
-        "dashboardMessage",
-        "Please enter a valid campaign amount greater than zero.",
-        true
-      );
-      return;
-    }
-  }
-
-  button.disabled = true;
-
-  try {
-    const { data, error } = await db.rpc(
-      "admin_review_client_campaign",
-      {
-        p_campaign_id: campaignId,
-        p_decision: decision,
-        p_approved_amount: approvedAmount
+      if (!accounts.length) {
+        body.innerHTML =
+          '<tr><td colspan="7">No client accounts found.</td></tr>';
+        return;
       }
-    );
 
-    if (error) throw error;
+      body.innerHTML = accounts.map(account => {
+        let actionButton = "";
 
-    if (!data || data.success !== true) {
-      throw new Error("The campaign review was not confirmed.");
+        if (account.account_status === "pending") {
+          actionButton = `
+            <button
+              type="button"
+              class="primary"
+              data-account-id="${escapeHTML(account.id)}"
+              data-next-status="active">
+              Approve
+            </button>`;
+        } else if (account.account_status === "active") {
+          actionButton = `
+            <button
+              type="button"
+              class="secondary"
+              data-account-id="${escapeHTML(account.id)}"
+              data-next-status="suspended">
+              Suspend
+            </button>`;
+        } else if (account.account_status === "suspended") {
+          actionButton = `
+            <button
+              type="button"
+              class="secondary"
+              data-account-id="${escapeHTML(account.id)}"
+              data-next-status="active">
+              Reactivate
+            </button>`;
+        }
+
+        return `
+          <tr>
+            <td>${escapeHTML(account.business_name)}</td>
+            <td>${escapeHTML(account.contact_name)}</td>
+            <td>${escapeHTML(account.email || "—")}</td>
+            <td>${escapeHTML(account.phone || "—")}</td>
+            <td>${statusLabel(account.account_status)}</td>
+            <td>${escapeHTML(formatDate(account.created_at))}</td>
+            <td>${actionButton || "—"}</td>
+          </tr>
+        `;
+      }).join("");
     }
 
-    await loadDashboard();
+    async function updateAccountStatus(accountId, nextStatus) {
+      if (!accountId) return;
 
-    showMessage(
-      "dashboardMessage",
-      decision === "approve"
-        ? "Enquiry approved for payment at R" +
-          approvedAmount.toFixed(2) +
-          ". Campaign is not activated."
-        : "Campaign enquiry rejected."
-    );
+      const allowedStatuses = ["active", "suspended"];
 
-  } catch (error) {
-    showMessage(
-      "dashboardMessage",
-      error.message || "Could not review this campaign.",
-      true
-    );
-  } finally {
-    button.disabled = false;
-  }
-});
-
-
-$("paymentsTable").addEventListener("click", async (event) => {
-  const button = event.target.closest("button[data-payment-id]");
-
-  if (!button) return;
-
-  const paymentId = button.dataset.paymentId;
-  const decision = button.dataset.decision;
-
-  if (!["verify", "fail"].includes(decision)) return;
-
-  const actionText = decision === "verify"
-    ? "verify this payment"
-    : "mark this payment as failed";
-
-  const warning = decision === "verify"
-    ? "Only continue after independently confirming this transaction in Yoco."
-    : "Only continue if this payment cannot be confirmed.";
-
-  const confirmed = window.confirm(
-    warning + "\n\nAre you sure you want to " + actionText + "?"
-  );
-
-  if (!confirmed) return;
-
-  button.disabled = true;
-
-  try {
-    const { data, error } = await db.rpc(
-      "admin_review_client_payment",
-      {
-        p_payment_id: paymentId,
-        p_decision: decision
+      if (!allowedStatuses.includes(nextStatus)) {
+        showMessage(
+          "dashboardMessage",
+          "Invalid account status requested.",
+          true
+        );
+        return;
       }
-    );
 
-    if (error) throw error;
+      const confirmed = window.confirm(
+        "Are you sure you want to change this client's account status to " +
+        nextStatus.toUpperCase() + "?"
+      );
 
-    if (!data || data.success !== true) {
-      throw new Error("The payment review was not confirmed.");
+      if (!confirmed) return;
+
+      try {
+        const { data: userResult, error: userError } =
+          await db.auth.getUser();
+
+        if (userError || !userResult.user) {
+          throw new Error("Your administrator session has expired.");
+        }
+
+        const { data: isAdmin, error: adminError } =
+          await db.rpc("is_alketum_admin");
+
+        if (adminError) throw adminError;
+
+        if (isAdmin !== true) {
+          throw new Error("Administrator permission denied.");
+        }
+
+        const { data: account, error: accountError } =
+          await db
+            .from("client_accounts")
+            .select("id, account_status")
+            .eq("id", accountId)
+            .maybeSingle();
+
+        if (accountError) throw accountError;
+
+        if (!account) {
+          throw new Error("Client account was not found.");
+        }
+
+        const currentStatus = account.account_status;
+
+        const validTransition =
+          (currentStatus === "pending" && nextStatus === "active") ||
+          (currentStatus === "active" && nextStatus === "suspended") ||
+          (currentStatus === "suspended" && nextStatus === "active");
+
+        if (!validTransition) {
+          throw new Error(
+            "This account status has changed. Refresh and try again."
+          );
+        }
+
+        const { data: updatedAccount, error: updateError } =
+          await db
+            .from("client_accounts")
+            .update({ account_status: nextStatus })
+            .eq("id", accountId)
+            .eq("account_status", currentStatus)
+            .select("id, account_status")
+            .maybeSingle();
+
+        if (updateError) throw updateError;
+
+        if (!updatedAccount) {
+          throw new Error(
+            "The account was not updated. Refresh and check its current status."
+          );
+        }
+
+        showMessage(
+          "dashboardMessage",
+          "Client account status successfully changed to " +
+          nextStatus.toUpperCase() + "."
+        );
+
+        await loadDashboard();
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "Could not update the client account.",
+          true
+        );
+      }
     }
 
-    await loadDashboard();
+    function renderCampaigns(campaigns, accounts) {
+      const body = $("campaignsTable");
 
-    showMessage(
-      "dashboardMessage",
-      decision === "verify"
-        ? "Payment verified. Campaign awaits final administrator approval."
-        : "Payment marked failed. Client may submit another payment."
-    );
+      if (!campaigns.length) {
+        body.innerHTML =
+          '<tr><td colspan="9">No campaign enquiries found.</td></tr>';
+        return;
+      }
 
-  } catch (error) {
-    showMessage(
-      "dashboardMessage",
-      error.message || "Could not review this payment.",
-      true
-    );
-  } finally {
-    button.disabled = false;
-  }
-});
+      const accountMap = new Map(
+        accounts.map(account => [
+          account.id,
+          account.business_name
+        ])
+      );
 
-$("loginForm").addEventListener("submit", async (event) => {
+      body.innerHTML = campaigns.map(campaign => {
+        let actionButtons = "";
+
+        if (campaign.status === "enquiry") {
+          actionButtons = `
+            <button
+              type="button"
+              class="primary"
+              data-campaign-id="${escapeHTML(campaign.id)}"
+              data-decision="approve">
+              Approve for Payment
+            </button>
+
+            <button
+              type="button"
+              class="secondary"
+              data-campaign-id="${escapeHTML(campaign.id)}"
+              data-decision="reject">
+              Reject
+            </button>`;
+
+        } else if (campaign.status === "paid_pending_review") {
+          actionButtons = `
+            <button
+              type="button"
+              class="primary"
+              data-campaign-id="${escapeHTML(campaign.id)}"
+              data-campaign-action="final-approve">
+              Final Approve
+            </button>`;
+
+        } else if (campaign.status === "approved") {
+          actionButtons = `
+            <button
+              type="button"
+              class="primary"
+              data-campaign-id="${escapeHTML(campaign.id)}"
+              data-campaign-action="activate">
+              Activate Campaign
+            </button>`;
+        }
+
+        return `
+          <tr>
+            <td>
+              ${escapeHTML(
+                accountMap.get(campaign.client_account_id) || "Unknown"
+              )}
+            </td>
+
+            <td>${escapeHTML(campaign.service_name)}</td>
+
+            <td>${escapeHTML(campaign.campaign_details)}</td>
+
+            <td>${statusLabel(campaign.status)}</td>
+
+            <td>
+              ${escapeHTML(formatMoney(campaign.approved_amount))}
+            </td>
+
+            <td class="campaign-extra">
+              ${escapeHTML(formatDate(campaign.activation_date))}
+            </td>
+
+            <td class="campaign-extra">
+              ${escapeHTML(formatDate(campaign.expiry_date))}
+            </td>
+
+            <td>${escapeHTML(formatDate(campaign.requested_at))}</td>
+
+            <td>${actionButtons || "—"}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function reviewCampaign(campaignId, decision) {
+      if (!campaignId) return;
+
+      if (!["approve", "reject"].includes(decision)) {
+        showMessage(
+          "dashboardMessage",
+          "Invalid campaign decision.",
+          true
+        );
+        return;
+      }
+
+      let approvedAmount = null;
+
+      if (decision === "approve") {
+        const amountInput = window.prompt(
+          "Enter the approved campaign price in South African Rand (ZAR)."
+        );
+
+        if (amountInput === null) return;
+
+        approvedAmount = Number(amountInput);
+
+        if (!Number.isFinite(approvedAmount) || approvedAmount <= 0) {
+          showMessage(
+            "dashboardMessage",
+            "Enter a valid approved amount greater than zero.",
+            true
+          );
+          return;
+        }
+      }
+
+      const confirmed = window.confirm(
+        decision === "approve"
+          ? "Approve this enquiry for payment at " +
+            formatMoney(approvedAmount) + "?"
+          : "Reject this campaign enquiry?"
+      );
+
+      if (!confirmed) return;
+
+      try {
+        const { data, error } = await db.rpc(
+          "admin_review_client_campaign",
+          {
+            p_campaign_id: campaignId,
+            p_decision: decision,
+            p_approved_amount: approvedAmount
+          }
+        );
+
+        if (error) throw error;
+
+        if (data && data.success === false) {
+          throw new Error(data.message || "Campaign review failed.");
+        }
+
+        showMessage(
+          "dashboardMessage",
+          decision === "approve"
+            ? "Campaign approved for payment at " +
+              formatMoney(approvedAmount) + "."
+            : "Campaign enquiry rejected."
+        );
+
+        await loadDashboard();
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "Could not review campaign.",
+          true
+        );
+      }
+    }
+
+    async function finalApproveCampaign(campaignId) {
+      if (!campaignId) return;
+
+      const confirmed = window.confirm(
+        "Final approve this campaign? Confirm that its payment has already been independently verified in Yoco."
+      );
+
+      if (!confirmed) return;
+
+      try {
+        const { data, error } = await db.rpc(
+          "admin_final_approve_client_campaign",
+          {
+            p_campaign_id: campaignId
+          }
+        );
+
+        if (error) throw error;
+
+        if (!data || data.success !== true) {
+          throw new Error(
+            data?.message || "Final campaign approval failed."
+          );
+        }
+
+        showMessage(
+          "dashboardMessage",
+          "Campaign finally approved. It is not active yet. You must activate it separately."
+        );
+
+        await loadDashboard();
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "Could not finally approve campaign.",
+          true
+        );
+      }
+    }
+
+    async function activateCampaign(campaignId) {
+      if (!campaignId) return;
+
+      const confirmed = window.confirm(
+        "Activate this approved campaign now? Its five-month promotional period will begin today. This action sets the activation and expiry dates."
+      );
+
+      if (!confirmed) return;
+
+      try {
+        const { data, error } = await db.rpc(
+          "admin_activate_client_campaign",
+          {
+            p_campaign_id: campaignId
+          }
+        );
+
+        if (error) throw error;
+
+        if (!data || data.success !== true) {
+          throw new Error(
+            data?.message || "Campaign activation failed."
+          );
+        }
+
+        showMessage(
+          "dashboardMessage",
+          "Campaign activated successfully. Activation: " +
+            formatDate(data.activation_date) +
+            ". Expiry: " + formatDate(data.expiry_date) + "."
+        );
+
+        await loadDashboard();
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "Could not activate campaign.",
+          true
+        );
+      }
+    }
+
+    function renderPayments(payments) {
+      const body = $("paymentsTable");
+
+      if (!payments.length) {
+        body.innerHTML =
+          '<tr><td colspan="8">No payment records found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = payments.map(payment => {
+        let actionButtons = "";
+
+        if (payment.status === "pending") {
+          actionButtons = `
+            <button
+              type="button"
+              class="primary"
+              data-payment-id="${escapeHTML(payment.id)}"
+              data-payment-decision="verify">
+              Verify Payment
+            </button>
+
+            <button
+              type="button"
+              class="secondary"
+              data-payment-id="${escapeHTML(payment.id)}"
+              data-payment-decision="fail">
+              Mark Failed
+            </button>`;
+        }
+
+        return `
+          <tr>
+            <td>${escapeHTML(payment.client_campaign_id)}</td>
+            <td>${escapeHTML(formatMoney(payment.amount))}</td>
+            <td>${escapeHTML(payment.currency)}</td>
+            <td>${escapeHTML(payment.provider)}</td>
+            <td>${escapeHTML(payment.provider_reference)}</td>
+            <td>${statusLabel(payment.status)}</td>
+            <td>${escapeHTML(formatDate(payment.verified_at))}</td>
+            <td>${actionButtons || "—"}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function reviewPayment(paymentId, decision) {
+      if (!paymentId) return;
+
+      if (!["verify", "fail"].includes(decision)) {
+        showMessage(
+          "dashboardMessage",
+          "Invalid payment decision.",
+          true
+        );
+        return;
+      }
+
+      if (decision === "verify") {
+        const confirmed = window.confirm(
+          "Have you independently confirmed this transaction in your Yoco account? Only verify a payment that you have actually received."
+        );
+
+        if (!confirmed) return;
+
+      } else {
+        const confirmed = window.confirm(
+          "Mark this payment reference as failed? The client will need to submit a new payment reference."
+        );
+
+        if (!confirmed) return;
+      }
+
+      try {
+        const { data, error } = await db.rpc(
+          "admin_review_client_payment",
+          {
+            p_payment_id: paymentId,
+            p_decision: decision
+          }
+        );
+
+        if (error) throw error;
+
+        if (!data || data.success !== true) {
+          throw new Error(
+            data?.message || "Payment review failed."
+          );
+        }
+
+        showMessage(
+          "dashboardMessage",
+          decision === "verify"
+            ? "Payment verified. The campaign is now awaiting final approval."
+            : "Payment marked as failed. The campaign can receive a new payment reference."
+        );
+
+        await loadDashboard();
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "Could not review payment.",
+          true
+        );
+      }
+    }
+
+    $("accountsTable").addEventListener("click", event => {
+      const button = event.target.closest("button[data-account-id]");
+
+      if (!button) return;
+
+      updateAccountStatus(
+        button.dataset.accountId,
+        button.dataset.nextStatus
+      );
+    });
+
+    $("campaignsTable").addEventListener("click", event => {
+      const button = event.target.closest("button[data-campaign-id]");
+
+      if (!button) return;
+
+      const campaignId = button.dataset.campaignId;
+      const decision = button.dataset.decision;
+      const action = button.dataset.campaignAction;
+
+      if (decision) {
+        reviewCampaign(campaignId, decision);
+        return;
+      }
+
+      if (action === "final-approve") {
+        finalApproveCampaign(campaignId);
+        return;
+      }
+
+      if (action === "activate") {
+        activateCampaign(campaignId);
+      }
+    });
+
+    $("paymentsTable").addEventListener("click", event => {
+      const button = event.target.closest("button[data-payment-id]");
+
+      if (!button) return;
+
+      reviewPayment(
+        button.dataset.paymentId,
+        button.dataset.paymentDecision
+      );
+    });
+
+    $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
 
       const email = $("adminEmail").value.trim();
       const password = $("adminPassword").value;
-      const button = $("loginButton");
+
+      if (!email || !password) {
+        showMessage(
+          "loginMessage",
+          "Enter your administrator email and password.",
+          true
+        );
+        return;
+      }
+
+      const loginButton = $("loginButton");
+      loginButton.disabled = true;
+      loginButton.textContent = "Signing in...";
 
       clearMessage("loginMessage");
-      button.disabled = true;
-      button.textContent = "Signing in...";
 
       try {
         const { error } = await db.auth.signInWithPassword({
@@ -992,83 +1183,90 @@ $("loginForm").addEventListener("submit", async (event) => {
         }
 
       } catch (error) {
+        showLogin();
+
         showMessage(
           "loginMessage",
-          error.message || "Sign-in failed.",
+          error.message || "Administrator sign-in failed.",
           true
         );
+
       } finally {
-        button.disabled = false;
-        button.textContent = "Sign in securely";
+        loginButton.disabled = false;
+        loginButton.textContent = "Sign in securely";
       }
     });
 
     $("refreshButton").addEventListener("click", async () => {
-      const authorised = await verifyAdministrator();
+      try {
+        const authorised = await verifyAdministrator();
 
-      if (authorised) {
-        await loadDashboard();
+        if (authorised) {
+          await loadDashboard();
+        }
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "Could not verify administrator session.",
+          true
+        );
       }
     });
 
     $("logoutButton").addEventListener("click", async () => {
       $("logoutButton").disabled = true;
 
-      const { error } = await db.auth.signOut();
+      try {
+        const { error } = await db.auth.signOut();
 
-      $("logoutButton").disabled = false;
+        if (error) throw error;
 
-      if (error) {
+        showLogin();
+        clearMessage("loginMessage");
+        $("adminPassword").value = "";
+
+      } catch (error) {
         showMessage(
           "dashboardMessage",
-          "Sign-out failed: " + error.message,
+          error.message || "Could not sign out.",
           true
         );
-        return;
-      }
 
-      showLogin();
-      showMessage(
-        "loginMessage",
-        "You have signed out successfully."
-      );
+      } finally {
+        $("logoutButton").disabled = false;
+      }
     });
 
-    // Check an existing Supabase session when the page opens.
-    async function initialiseAdmin() {
+    async function initialiseDashboard() {
       try {
         const { data, error } = await db.auth.getSession();
 
         if (error) throw error;
 
-        if (data.session) {
-          const authorised = await verifyAdministrator();
-
-          if (authorised) {
-            await loadDashboard();
-          }
-        } else {
+        if (!data.session) {
           showLogin();
+          return;
+        }
+
+        const authorised = await verifyAdministrator();
+
+        if (authorised) {
+          await loadDashboard();
         }
 
       } catch (error) {
         showLogin();
+
         showMessage(
           "loginMessage",
-          error.message || "Could not initialise administrator access.",
+          error.message || "Could not initialise administrator dashboard.",
           true
         );
       }
     }
 
-    // If the authentication session changes, re-check authorisation.
-    db.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" || !session) {
-        showLogin();
-      }
-    });
+    initialiseDashboard();
 
-    initialiseAdmin();
   </script>
 </body>
 </html>
