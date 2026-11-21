@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -298,7 +297,9 @@
 
       <div class="panel">
         <h2>Client Accounts</h2>
-        <p class="muted">Registration and account status overview.</p>
+        <p class="muted">
+          Registration and account status overview.
+        </p>
 
         <div class="table-wrap">
           <table>
@@ -314,12 +315,45 @@
               </tr>
             </thead>
             <tbody id="accountsTable">
-              <tr><td colspan="7">Loading accounts...</td></tr>
+              <tr>
+                <td colspan="7">Loading client accounts...</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
 
+      <div class="panel">
+        <h2>Payment Records</h2>
+        <p class="muted">
+          Review submitted Yoco payment references. Verify payments
+          only after independently confirming the transaction in Yoco.
+        </p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Campaign</th>
+                <th>Amount</th>
+                <th>Currency</th>
+                <th>Provider</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th>Verified at</th>
+                <th>Admin Action</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTable">
+              <tr>
+                <td colspan="10">Loading payments...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div class="panel">
         <h2>Campaign Enquiries</h2>
         <p class="muted">
@@ -343,35 +377,9 @@
               </tr>
             </thead>
             <tbody id="campaignsTable">
-              <tr><td colspan="9">Loading campaigns...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>Payment Records</h2>
-        <p class="muted">
-          Review submitted Yoco payment references. Verify payments
-          only after independently confirming the transaction in Yoco.
-        </p>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
               <tr>
-                <th>Campaign ID</th>
-                <th>Amount</th>
-                <th>Currency</th>
-                <th>Provider</th>
-                <th>Reference</th>
-                <th>Status</th>
-                <th>Verified at</th>
-                <th>Admin Action</th>
+                <td colspan="9">Loading campaigns...</td>
               </tr>
-            </thead>
-            <tbody id="paymentsTable">
-              <tr><td colspan="8">Loading payments...</td></tr>
             </tbody>
           </table>
         </div>
@@ -549,24 +557,29 @@
           await db
             .from("client_payments")
             .select(
-              "id, client_campaign_id, amount, currency, provider, provider_reference, status, verified_at"
+              "id, client_campaign_id, amount, currency, provider, provider_reference, status, created_at, verified_at"
             )
             .order("created_at", { ascending: false });
 
         if (paymentError) throw paymentError;
 
-        renderAccounts(accounts || []);
-        renderCampaigns(campaigns || [], accounts || []);
-        renderPayments(payments || []);
+        const accountRows = accounts || [];
+        const campaignRows = campaigns || [];
+        const paymentRows = payments || [];
 
-        $("totalAccounts").textContent = accounts.length;
+        renderAccounts(accountRows);
+        renderCampaigns(campaignRows, accountRows);
+        renderPayments(paymentRows, campaignRows, accountRows);
+
+        $("totalAccounts").textContent = accountRows.length;
+
         $("pendingAccounts").textContent =
-          accounts.filter(
+          accountRows.filter(
             account => account.account_status === "pending"
           ).length;
 
-        $("totalCampaigns").textContent = campaigns.length;
-        $("totalPayments").textContent = payments.length;
+        $("totalCampaigns").textContent = campaignRows.length;
+        $("totalPayments").textContent = paymentRows.length;
 
         showMessage(
           "dashboardMessage",
@@ -585,7 +598,6 @@
         $("refreshButton").disabled = false;
       }
     }
-
     function renderAccounts(accounts) {
       const body = $("accountsTable");
 
@@ -907,7 +919,6 @@
         );
       }
     }
-
     async function finalApproveCampaign(campaignId) {
       if (!campaignId) return;
 
@@ -992,16 +1003,34 @@
       }
     }
 
-    function renderPayments(payments) {
+    function renderPayments(payments, campaigns, accounts) {
       const body = $("paymentsTable");
 
       if (!payments.length) {
         body.innerHTML =
-          '<tr><td colspan="8">No payment records found.</td></tr>';
+          '<tr><td colspan="10">No payment records found.</td></tr>';
         return;
       }
 
       body.innerHTML = payments.map(payment => {
+        const campaign = campaigns.find(
+          item => item.id === payment.client_campaign_id
+        );
+
+        const account = campaign
+          ? accounts.find(
+              item => item.id === campaign.client_account_id
+            )
+          : null;
+
+        const businessName = account
+          ? account.business_name
+          : "Business record unavailable";
+
+        const campaignName = campaign
+          ? campaign.service_name
+          : "Campaign record unavailable";
+
         let actionButtons = "";
 
         if (payment.status === "pending") {
@@ -1025,12 +1054,14 @@
 
         return `
           <tr>
-            <td>${escapeHTML(payment.client_campaign_id)}</td>
+            <td>${escapeHTML(businessName)}</td>
+            <td>${escapeHTML(campaignName)}</td>
             <td>${escapeHTML(formatMoney(payment.amount))}</td>
             <td>${escapeHTML(payment.currency)}</td>
             <td>${escapeHTML(payment.provider)}</td>
             <td>${escapeHTML(payment.provider_reference)}</td>
             <td>${statusLabel(payment.status)}</td>
+            <td>${escapeHTML(formatDate(payment.created_at))}</td>
             <td>${escapeHTML(formatDate(payment.verified_at))}</td>
             <td>${actionButtons || "—"}</td>
           </tr>
