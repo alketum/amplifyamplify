@@ -1213,22 +1213,6 @@ return `
     `;
   }
 
-  if (campaign.activation_date) {
-    html += `
-      <p class="muted">
-        Activation date: ${escapeHTML(campaign.activation_date)}
-      </p>
-    `;
-  }
-
-  if (campaign.expiry_date) {
-    html += `
-      <p class="muted">
-        Campaign expiry date: ${escapeHTML(campaign.expiry_date)}
-      </p>
-    `;
-  }
-
   if (currentAccount.account_status === "active") {
     html += `
       <div class="campaign-files">
