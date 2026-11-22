@@ -1234,20 +1234,6 @@ async function uploadCampaignFile(input) {
     return;
   }
 
-  const campaign = await db
-    .from("client_campaigns")
-    .select("id, status")
-    .eq("id", campaignId)
-    .eq("client_account_id", currentAccount.id)
-    .maybeSingle();
-
-  if (campaign.error || !campaign.data ||
-      !canUploadCampaignFiles(campaign.data)) {
-    showMessage("File uploads are not permitted for this campaign.", true);
-    input.value = "";
-    return;
-  }
-
   if (!ALLOWED_CAMPAIGN_FILE_TYPES.includes(file.type)) {
     showMessage("This file type is not permitted.", true);
     input.value = "";
@@ -1266,13 +1252,37 @@ async function uploadCampaignFile(input) {
     return;
   }
 
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storagePath =
-    campaignId + "/" + crypto.randomUUID() + "-" + safeName;
-
   input.disabled = true;
 
   try {
+    showMessage("Checking campaign permissions...");
+
+    const { data: campaign, error: campaignError } = await db
+      .from("client_campaigns")
+      .select("id, status")
+      .eq("id", campaignId)
+      .eq("client_account_id", currentAccount.id)
+      .maybeSingle();
+
+    if (campaignError) throw campaignError;
+
+    if (!campaign || !canUploadCampaignFiles(campaign)) {
+      throw new Error("File uploads are not permitted for this campaign.");
+    }
+
+    const uniqueId =
+      window.crypto &&
+      typeof window.crypto.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : Date.now() + "-" + Math.random().toString(36).slice(2);
+
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    const storagePath =
+      campaignId + "/" + uniqueId + "-" + safeName;
+
+    showMessage("Uploading campaign file...");
+
     const { error: uploadError } = await db.storage
       .from(CAMPAIGN_FILE_BUCKET)
       .upload(storagePath, file, {
@@ -1281,6 +1291,8 @@ async function uploadCampaignFile(input) {
       });
 
     if (uploadError) throw uploadError;
+
+    showMessage("Saving file record...");
 
     const { error: metadataError } = await db
       .from("client_campaign_files")
@@ -1295,22 +1307,28 @@ async function uploadCampaignFile(input) {
 
     if (metadataError) {
       console.error("File metadata error:", metadataError);
+
       throw new Error(
-        "The file was uploaded but its record could not be saved. Please contact ALKETUM for assistance."
+        "The file reached storage, but its record could not be saved. Please contact ALKETUM for assistance."
       );
     }
 
     showMessage("Campaign file uploaded successfully.");
+
     await loadCampaigns();
 
   } catch (error) {
     console.error("Campaign file upload error:", error);
-    showMessage(error.message || "File upload failed.", true);
+
+    showMessage(
+      error.message || "File upload failed.",
+      true
+    );
+
   } finally {
     input.disabled = false;
   }
 }
-
 async function downloadCampaignFile(fileId) {
   if (!currentUser || !currentAccount ||
       currentAccount.account_status !== "active") {
