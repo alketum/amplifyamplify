@@ -754,14 +754,13 @@
           );
         }
 
-        const { data: updatedAccount, error: updateError } =
-          await db
-            .from("client_accounts")
-            .update({ account_status: nextStatus })
-            .eq("id", accountId)
-            .eq("account_status", currentStatus)
-            .select("id, account_status")
-            .maybeSingle();
+        
+const { data: updatedAccount, error: updateError } =
+  await db.rpc("admin_update_client_account_status", {
+    p_account_id: accountId,
+    p_next_status: nextStatus
+  });
+
 
         if (updateError) throw updateError;
 
