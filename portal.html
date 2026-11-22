@@ -199,6 +199,79 @@
       .panel { padding: 17px; }
       header h1 { font-size: 22px; }
     }
+
+/* Campaign Progress Timeline */
+.campaign-timeline {
+  margin: 20px 0;
+  padding: 16px;
+  background: #17213a;
+  border: 1px solid #34415e;
+  border-radius: 12px;
+}
+
+.campaign-timeline h4 {
+  margin: 0 0 16px;
+  color: #ffffff;
+}
+
+.campaign-timeline ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.campaign-timeline li {
+  position: relative;
+  padding: 10px 12px 10px 34px;
+  margin: 0 0 8px;
+  border-left: 3px solid #526078;
+  color: #aab4c8;
+  background: #101629;
+  border-radius: 6px;
+}
+
+.campaign-timeline li::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 14px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #526078;
+}
+
+.campaign-timeline li.is-complete {
+  border-left-color: #22c55e;
+  color: #bbf7d0;
+}
+
+.campaign-timeline li.is-complete::before {
+  background: #22c55e;
+}
+
+.campaign-timeline li.is-current {
+  border-left-color: #38bdf8;
+  color: #ffffff;
+  font-weight: 700;
+  background: #203653;
+}
+
+.campaign-timeline li.is-current::before {
+  background: #38bdf8;
+}
+
+.campaign-timeline li.is-upcoming {
+  opacity: 0.65;
+}
+
+.timeline-terminal {
+  padding: 12px;
+  color: #fecaca;
+  background: #3b1d2a;
+  border-radius: 8px;
+}
+
   </style>
 </head>
 
@@ -978,6 +1051,66 @@ function renderCampaign(campaign, files = []) {
           : ""}
       </p>
   `;
+
+  
+  const timelineStages = [
+    "Enquiry received",
+    "ALKETUM review",
+    "Payment",
+    "Payment verification",
+    "Final approval",
+    "Campaign activation",
+    "Campaign active",
+    "Campaign completion"
+  ];
+
+  const stagePositions = {
+    enquiry: 2,
+    awaiting_payment: 3,
+    payment_submitted: 4,
+    paid_pending_review: 5,
+    approved: 6,
+    active: 7,
+    completed: 8
+  };
+
+
+  if (status === "rejected" || status === "cancelled") {
+    html += `
+      <div class="campaign-timeline">
+        <div class="timeline-terminal">
+          ${status === "rejected"
+            ? "This campaign enquiry was rejected."
+            : "This campaign was cancelled."}
+        </div>
+      </div>
+    `;
+  } else {
+    const currentStage = stagePositions[status] || 0;
+
+    html += `
+      <div class="campaign-timeline">
+        <h4>Campaign Progress</h4>
+        <ol>
+          ${timelineStages.map((stage, index) => {
+            const position = index + 1;
+            const stageClass =
+              position < currentStage
+                ? "is-complete"
+                : position === currentStage
+                  ? "is-current"
+                  : "is-upcoming";
+
+            return `
+              <li class="${stageClass}">
+                ${escapeHTML(stage)}
+              </li>
+            `;
+          }).join("")}
+        </ol>
+      </div>
+    `;
+  }
 
   if (
     campaign.approved_amount !== null &&
