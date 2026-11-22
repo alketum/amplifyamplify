@@ -384,7 +384,33 @@
           </table>
         </div>
       </div>
+      <div class="panel">
+        <h2>Campaign Files</h2>
+        <p class="muted">
+          Securely view, download and manage files uploaded by clients.
+          File deletion is restricted to authorised ALKETUM administrators.
+        </p>
 
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Campaign</th>
+                <th>File name</th>
+                <th>Size</th>
+                <th>Uploaded</th>
+                <th>Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="campaignFilesTable">
+              <tr>
+                <td colspan="6">Campaign files will appear here.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <footer>
@@ -562,13 +588,24 @@
             .order("created_at", { ascending: false });
 
         if (paymentError) throw paymentError;
+        const { data: files, error: filesError } =
+          await db
+            .from("client_campaign_files")
+            .select(
+              "id, campaign_id, storage_path, original_file_name, mime_type, file_size, created_at"
+            )
+            .order("created_at", { ascending: false });
+
+        if (filesError) throw filesError;
 
         const accountRows = accounts || [];
         const campaignRows = campaigns || [];
         const paymentRows = payments || [];
 
-        renderAccounts(accountRows);
+                    renderAccounts(accountRows);
         renderCampaigns(campaignRows, accountRows);
+        renderPayments(paymentRows, campaignRows, accountRows);
+        renderCampaignFiles(files || [], campaignRows, accountRows);
         renderPayments(paymentRows, campaignRows, accountRows);
 
         $("totalAccounts").textContent = accountRows.length;
@@ -1068,7 +1105,166 @@
         `;
       }).join("");
     }
+    function renderCampaignFiles(files, campaigns, accounts) {
+      const body = $("campaignFilesTable");
 
+      if (!files.length) {
+        body.innerHTML =
+          '<tr><td colspan="6">No campaign files uploaded yet.</td></tr>';
+        return;
+      }
+
+      const campaignMap = new Map(
+        campaigns.map(campaign => [campaign.id, campaign])
+      );
+
+      const accountMap = new Map(
+        accounts.map(account => [account.id, account.business_name])
+      );
+
+      body.innerHTML = files.map(file => {
+        const campaign = campaignMap.get(file.campaign_id);
+
+        const businessName = campaign
+          ? accountMap.get(campaign.client_account_id) || "Unknown"
+          : "Campaign unavailable";
+
+        const campaignName = campaign
+          ? campaign.service_name
+          : "Campaign unavailable";
+
+        const size = file.file_size
+          ? (Number(file.file_size) / 1024).toFixed(1) + " KB"
+          : "—";
+
+        return `
+          <tr>
+            <td>${escapeHTML(businessName)}</td>
+            <td>${escapeHTML(campaignName)}</td>
+            <td>${escapeHTML(file.original_file_name)}</td>
+            <td>${escapeHTML(size)}</td>
+            <td>${escapeHTML(formatDate(file.created_at))}</td>
+            <td>
+              <button
+                type="button"
+                class="primary"
+                data-file-download="${escapeHTML(file.id)}">
+                Download
+              </button>
+
+              <button
+                type="button"
+                class="secondary"
+                data-file-delete="${escapeHTML(file.id)}">
+                Delete
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+    async function downloadAdminCampaignFile(fileId) {
+      try {
+        const { data: isAdmin, error: adminError } =
+          await db.rpc("is_alketum_admin");
+
+        if (adminError) throw adminError;
+        if (isAdmin !== true) {
+          throw new Error("Administrator access denied.");
+        }
+
+        const { data: file, error: fileError } = await db
+          .from("client_campaign_files")
+          .select("storage_path, original_file_name")
+          .eq("id", fileId)
+          .maybeSingle();
+
+        if (fileError) throw fileError;
+        if (!file) throw new Error("File not found.");
+
+        const { data, error } = await db.storage
+          .from("campaign-files")
+          .createSignedUrl(file.storage_path, 60);
+
+        if (error) throw error;
+
+        const link = document.createElement("a");
+        link.href = data.signedUrl;
+        link.download = file.original_file_name;
+        link.target = "_blank";
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "File download failed.",
+          true
+        );
+      }
+    }
+    async function deleteAdminCampaignFile(fileId) {
+      if (!fileId) return;
+
+      const confirmed = window.confirm(
+        "Permanently delete this campaign file? This cannot be undone."
+      );
+
+      if (!confirmed) return;
+
+      try {
+        const { data: isAdmin, error: adminError } =
+          await db.rpc("is_alketum_admin");
+
+        if (adminError) throw adminError;
+
+        if (isAdmin !== true) {
+          throw new Error("Administrator access denied.");
+        }
+
+        const { data: file, error: fileError } = await db
+          .from("client_campaign_files")
+          .select("id, storage_path, original_file_name")
+          .eq("id", fileId)
+          .maybeSingle();
+
+        if (fileError) throw fileError;
+        if (!file) throw new Error("File not found.");
+
+        const { error: storageError } = await db.storage
+          .from("campaign-files")
+          .remove([file.storage_path]);
+
+        if (storageError) throw storageError;
+
+        const { error: metadataError } = await db
+          .from("client_campaign_files")
+          .delete()
+          .eq("id", fileId);
+
+        if (metadataError) {
+          throw new Error(
+            "Storage file deleted, but its database record could not be removed. Please contact support."
+          );
+        }
+
+        await loadDashboard();
+
+        showMessage(
+          "dashboardMessage",
+          "Campaign file permanently deleted."
+        );
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "Campaign file deletion failed.",
+          true
+        );
+      }
+    }
     async function reviewPayment(paymentId, decision) {
       if (!paymentId) return;
 
@@ -1176,7 +1372,37 @@
         button.dataset.paymentDecision
       );
     });
+    $("campaignFilesTable").addEventListener("click", async event => {
+      const downloadButton = event.target.closest(
+        "button[data-file-download]"
+      );
 
+      const deleteButton = event.target.closest(
+        "button[data-file-delete]"
+      );
+
+      if (downloadButton) {
+        const fileId = downloadButton.dataset.fileDownload;
+
+        downloadButton.disabled = true;
+        downloadButton.textContent = "Preparing...";
+
+        try {
+          await downloadAdminCampaignFile(fileId);
+        } finally {
+          downloadButton.disabled = false;
+          downloadButton.textContent = "Download";
+        }
+
+        return;
+      }
+
+      if (deleteButton) {
+        const fileId = deleteButton.dataset.fileDelete;
+
+        await deleteAdminCampaignFile(fileId);
+      }
+    });
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
 
