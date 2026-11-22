@@ -271,7 +271,13 @@
   background: #3b1d2a;
   border-radius: 8px;
 }
-
+.timeline-date {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: normal;
+  opacity: 0.9;
+}
   </style>
 </head>
 
@@ -1101,10 +1107,19 @@ function renderCampaign(campaign, files = []) {
                   ? "is-current"
                   : "is-upcoming";
 
-            return `
-              <li class="${stageClass}">
-                ${escapeHTML(stage)}
-              </li>
+             const milestoneDate =
+  position === 6 && campaign.activation_date
+    ? `<small class="timeline-date">Activation: ${escapeHTML(campaign.activation_date)}</small>`
+    : position === 7 && campaign.expiry_date
+      ? `<small class="timeline-date">Expires: ${escapeHTML(campaign.expiry_date)}</small>`
+      : "";
+
+return `
+  <li class="${stageClass}">
+    ${escapeHTML(stage)}
+    ${milestoneDate}
+  </li>
+`;
             `;
           }).join("")}
         </ol>
