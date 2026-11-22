@@ -163,7 +163,38 @@
       padding: 20px;
       font-size: 13px;
     }
+.campaign-files {
+  margin-top: 16px;
+  padding: 15px;
+  background: #0b1429;
+  border: 1px solid #435477;
+  border-radius: 10px;
+}
 
+.campaign-files h4 {
+  margin: 0 0 10px;
+  color: #dce5ff;
+}
+
+.file-list {
+  margin-top: 12px;
+}
+
+.file-row {
+  padding: 10px 0;
+  border-top: 1px solid #344260;
+  overflow-wrap: anywhere;
+}
+
+.file-row button {
+  margin-top: 8px;
+}
+
+.file-upload-note {
+  color: #aab8d8;
+  font-size: 13px;
+  line-height: 1.5;
+}
     @media (max-width: 480px) {
       .panel { padding: 17px; }
       header h1 { font-size: 22px; }
@@ -400,7 +431,37 @@ const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
+const CAMPAIGN_FILE_BUCKET = "campaign-files";
 
+const ALLOWED_CAMPAIGN_FILE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+  "text/plain",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+];
+
+const MAX_CAMPAIGN_FILE_SIZE = 50 * 1024 * 1024;
+
+const ALLOWED_CAMPAIGN_FILE_STATUSES = [
+  "enquiry",
+  "awaiting_payment",
+  "payment_submitted",
+  "paid_pending_review",
+  "approved",
+  "active"
+];
+
+function canUploadCampaignFiles(campaign) {
+  return Boolean(
+    currentAccount &&
+    currentAccount.account_status === "active" &&
+    campaign &&
+    ALLOWED_CAMPAIGN_FILE_STATUSES.includes(campaign.status)
+  );
+}
 const $ = (id) => document.getElementById(id);
 
 let currentUser = null;
@@ -895,7 +956,7 @@ function campaignProgressMessage(status) {
     "Please contact ALKETUM if you need an update.";
 }
 
-function renderCampaign(campaign) {
+function renderCampaign(campaign, files = []) {
   const status = campaign.status || "enquiry";
 
   let html = `
@@ -918,8 +979,10 @@ function renderCampaign(campaign) {
       </p>
   `;
 
-if (campaign.approved_amount !== null &&
-      campaign.approved_amount !== undefined) {
+  if (
+    campaign.approved_amount !== null &&
+    campaign.approved_amount !== undefined
+  ) {
     html += `
       <div class="payment-box">
         <strong>ALKETUM-approved campaign price</strong>
@@ -932,7 +995,8 @@ if (campaign.approved_amount !== null &&
       </div>
     `;
   }
-if (status === "awaiting_payment") {
+
+  if (status === "awaiting_payment") {
     if (currentAccount.account_status !== "active") {
       html += `
         <div class="payment-message">
@@ -944,7 +1008,7 @@ if (status === "awaiting_payment") {
       campaign.approved_amount === undefined ||
       Number(campaign.approved_amount) <= 0
     ) {
-    html += `
+      html += `
         <div class="payment-message">
           An approved campaign price is not available. Please contact ALKETUM before making payment.
         </div>
@@ -958,6 +1022,7 @@ if (status === "awaiting_payment") {
             <p class="muted">
               Complete payment using the payment instructions provided by ALKETUM. Then enter the transaction reference below.
             </p>
+
             <label for="reference-${escapeHTML(campaign.id)}">
               Yoco Payment Reference
             </label>
@@ -975,7 +1040,8 @@ if (status === "awaiting_payment") {
             <button type="submit">
               Submit Payment Reference
             </button>
-               <p class="muted">
+
+            <p class="muted">
               Submitting a reference does not confirm payment. ALKETUM will independently verify the transaction. Your campaign will not activate automatically.
             </p>
           </div>
@@ -991,7 +1057,8 @@ if (status === "awaiting_payment") {
       </div>
     `;
   }
-if (status === "approved") {
+
+  if (status === "approved") {
     html += `
       <div class="payment-message">
         Final approval recorded. The campaign is not active until ALKETUM activates it.
@@ -1006,11 +1073,78 @@ if (status === "approved") {
       </p>
     `;
   }
-if (campaign.expiry_date) {
+
+  if (campaign.expiry_date) {
     html += `
       <p class="muted">
         Campaign expiry date: ${escapeHTML(campaign.expiry_date)}
       </p>
+    `;
+  }
+
+  if (currentAccount.account_status === "active") {
+    html += `
+      <div class="campaign-files">
+        <h4>Campaign Files</h4>
+    `;
+
+    if (canUploadCampaignFiles(campaign)) {
+      html += `
+        <label for="campaign-file-${escapeHTML(campaign.id)}">
+          Upload campaign files
+        </label>
+
+        <input
+          type="file"
+          id="campaign-file-${escapeHTML(campaign.id)}"
+          class="campaign-file-input"
+          data-campaign-id="${escapeHTML(campaign.id)}"
+          accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.docx,.xlsx"
+        >
+
+        <p class="file-upload-note">
+          Maximum file size: 50 MB. Only approved file types are accepted.
+        </p>
+      `;
+    } else {
+      html += `
+        <p class="file-upload-note">
+          File uploads are unavailable for this campaign status.
+        </p>
+      `;
+    }
+
+    html += `<div class="file-list">`;
+
+    if (files.length === 0) {
+      html += `
+        <p class="muted">No files uploaded yet.</p>
+      `;
+    } else {
+      files.forEach(file => {
+        html += `
+          <div class="file-row">
+            <strong>${escapeHTML(file.original_file_name)}</strong>
+            <p class="muted">
+              ${escapeHTML(
+                new Date(file.created_at).toLocaleDateString("en-ZA")
+              )}
+            </p>
+            <button
+              type="button"
+              class="secondary campaign-file-download"
+              data-file-id="${escapeHTML(file.id)}"
+            >
+              Download File
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    html += `
+        </div>
+      </div>
     `;
   }
 
@@ -1036,7 +1170,7 @@ async function loadCampaigns() {
       .eq("client_account_id", currentAccount.id)
       .order("created_at", { ascending: false });
 
-if (error) throw error;
+    if (error) throw error;
 
     if (!data || data.length === 0) {
       list.textContent =
@@ -1044,13 +1178,42 @@ if (error) throw error;
       return;
     }
 
-    list.innerHTML = data.map(renderCampaign).join("");
+    const filesByCampaign = {};
+
+    if (currentAccount.account_status === "active") {
+      const { data: files, error: filesError } = await db
+        .from("client_campaign_files")
+        .select(
+          "id, campaign_id, storage_path, original_file_name, mime_type, file_size, created_at"
+        )
+        .in("campaign_id", data.map(campaign => campaign.id))
+        .order("created_at", { ascending: false });
+
+      if (filesError) {
+        console.error("Campaign files loading error:", filesError);
+      } else {
+        (files || []).forEach(file => {
+          if (!filesByCampaign[file.campaign_id]) {
+            filesByCampaign[file.campaign_id] = [];
+          }
+
+          filesByCampaign[file.campaign_id].push(file);
+        });
+      }
+    }
+
+    list.innerHTML = data.map(campaign =>
+      renderCampaign(
+        campaign,
+        filesByCampaign[campaign.id] || []
+      )
+    ).join("");
 
   } catch (error) {
     list.textContent =
       "Campaign enquiries could not be loaded.";
 
-console.error("Campaign loading error:", error);
+    console.error("Campaign loading error:", error);
 
     showMessage(
       error.message || "Could not load your campaign enquiries.",
@@ -1058,7 +1221,133 @@ console.error("Campaign loading error:", error);
     );
   }
 }
+async function uploadCampaignFile(input) {
+  const campaignId = input.dataset.campaignId;
+  const file = input.files && input.files[0];
 
+  if (!file) return;
+
+  if (!currentUser || !currentAccount ||
+      currentAccount.account_status !== "active") {
+    showMessage("Your active client account is required for file uploads.", true);
+    input.value = "";
+    return;
+  }
+
+  const campaign = await db
+    .from("client_campaigns")
+    .select("id, status")
+    .eq("id", campaignId)
+    .eq("client_account_id", currentAccount.id)
+    .maybeSingle();
+
+  if (campaign.error || !campaign.data ||
+      !canUploadCampaignFiles(campaign.data)) {
+    showMessage("File uploads are not permitted for this campaign.", true);
+    input.value = "";
+    return;
+  }
+
+  if (!ALLOWED_CAMPAIGN_FILE_TYPES.includes(file.type)) {
+    showMessage("This file type is not permitted.", true);
+    input.value = "";
+    return;
+  }
+
+  if (file.size < 1 || file.size > MAX_CAMPAIGN_FILE_SIZE) {
+    showMessage("Files must be between 1 byte and 50 MB.", true);
+    input.value = "";
+    return;
+  }
+
+  if (!file.name.trim() || file.name.length > 255) {
+    showMessage("The filename must be between 1 and 255 characters.", true);
+    input.value = "";
+    return;
+  }
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storagePath =
+    campaignId + "/" + crypto.randomUUID() + "-" + safeName;
+
+  input.disabled = true;
+
+  try {
+    const { error: uploadError } = await db.storage
+      .from(CAMPAIGN_FILE_BUCKET)
+      .upload(storagePath, file, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { error: metadataError } = await db
+      .from("client_campaign_files")
+      .insert({
+        campaign_id: campaignId,
+        storage_path: storagePath,
+        original_file_name: file.name,
+        mime_type: file.type,
+        file_size: file.size,
+        uploaded_by: currentUser.id
+      });
+
+    if (metadataError) {
+      console.error("File metadata error:", metadataError);
+      throw new Error(
+        "The file was uploaded but its record could not be saved. Please contact ALKETUM for assistance."
+      );
+    }
+
+    showMessage("Campaign file uploaded successfully.");
+    await loadCampaigns();
+
+  } catch (error) {
+    console.error("Campaign file upload error:", error);
+    showMessage(error.message || "File upload failed.", true);
+  } finally {
+    input.disabled = false;
+  }
+}
+
+async function downloadCampaignFile(fileId) {
+  if (!currentUser || !currentAccount ||
+      currentAccount.account_status !== "active") {
+    showMessage("An active client account is required for file access.", true);
+    return;
+  }
+
+  try {
+    const { data: file, error: fileError } = await db
+      .from("client_campaign_files")
+      .select("storage_path, original_file_name")
+      .eq("id", fileId)
+      .maybeSingle();
+
+    if (fileError) throw fileError;
+    if (!file) throw new Error("File not found or access denied.");
+
+    const { data, error } = await db.storage
+      .from(CAMPAIGN_FILE_BUCKET)
+      .createSignedUrl(file.storage_path, 60);
+
+    if (error) throw error;
+
+    const link = document.createElement("a");
+    link.href = data.signedUrl;
+    link.download = file.original_file_name;
+    link.target = "_blank";
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+  } catch (error) {
+    console.error("Campaign file download error:", error);
+    showMessage(error.message || "File download failed.", true);
+  }
+}
 async function submitPaymentReference(form) {
   clearMessage();
 
@@ -1189,7 +1478,33 @@ const form = event.target.closest("form.payment-form");
 
   await submitPaymentReference(form);
 });
+$("campaignList").addEventListener("change", async (event) => {
+  const input = event.target.closest(".campaign-file-input");
 
+  if (!input) return;
+
+  await uploadCampaignFile(input);
+});
+
+$("campaignList").addEventListener("click", async (event) => {
+  const button = event.target.closest(".campaign-file-download");
+
+  if (!button) return;
+
+  const fileId = button.dataset.fileId;
+
+  if (!fileId) return;
+
+  button.disabled = true;
+  button.textContent = "Preparing download...";
+
+  try {
+    await downloadCampaignFile(fileId);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Download File";
+  }
+});
 $("forgotPasswordLink").addEventListener("click", (event) => {
   event.preventDefault();
   clearMessage();
