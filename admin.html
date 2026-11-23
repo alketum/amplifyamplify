@@ -551,89 +551,92 @@
       return true;
     }
 
-    async function loadDashboard() {
-      if (loading) return;
+   
+async function loadDashboard() {
+  if (loading) return;
 
-      loading = true;
-      $("refreshButton").disabled = true;
-      clearMessage("dashboardMessage");
+  loading = true;
+  $("refreshButton").disabled = true;
+  clearMessage("dashboardMessage");
 
-      try {
-        const { data: accounts, error: accountError } =
-          await db
-            .from("client_accounts")
-            .select(
-              "id, business_name, contact_name, email, phone, account_status, created_at"
-            )
-            .order("created_at", { ascending: false });
-
-        if (accountError) throw accountError;
-
+  try {
+    const { data: accounts, error: accountError } =
+      await db
+        .from("client_accounts")
         .select(
-  "id, client_account_id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date, completed_at"
-)
-  "id, client_account_id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date, completed_at"
-)
-            .order("requested_at", { ascending: false });
+          "id, business_name, contact_name, email, phone, account_status, created_at"
+        )
+        .order("created_at", { ascending: false });
 
-        if (campaignError) throw campaignError;
+    if (accountError) throw accountError;
 
-        const { data: payments, error: paymentError } =
-          await db
-            .from("client_payments")
-            .select(
-              "id, client_campaign_id, amount, currency, provider, provider_reference, status, created_at, verified_at"
-            )
-            .order("created_at", { ascending: false });
+    const { data: campaigns, error: campaignError } =
+      await db
+        .from("client_campaigns")
+        .select(
+          "id, client_account_id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date, completed_at"
+        )
+        .order("requested_at", { ascending: false });
 
-        if (paymentError) throw paymentError;
-        const { data: files, error: filesError } =
-          await db
-            .from("client_campaign_files")
-            .select(
-              "id, campaign_id, storage_path, original_file_name, mime_type, file_size, created_at"
-            )
-            .order("created_at", { ascending: false });
+    if (campaignError) throw campaignError;
 
-        if (filesError) throw filesError;
+    const { data: payments, error: paymentError } =
+      await db
+        .from("client_payments")
+        .select(
+          "id, client_campaign_id, amount, currency, provider, provider_reference, status, created_at, verified_at"
+        )
+        .order("created_at", { ascending: false });
 
-        const accountRows = accounts || [];
-        const campaignRows = campaigns || [];
-        const paymentRows = payments || [];
+    if (paymentError) throw paymentError;
 
-                    renderAccounts(accountRows);
-        renderCampaigns(campaignRows, accountRows);
-        renderPayments(paymentRows, campaignRows, accountRows);
-        renderCampaignFiles(files || [], campaignRows, accountRows);
-        renderPayments(paymentRows, campaignRows, accountRows);
+    const { data: files, error: filesError } =
+      await db
+        .from("client_campaign_files")
+        .select(
+          "id, campaign_id, storage_path, original_file_name, mime_type, file_size, created_at"
+        )
+        .order("created_at", { ascending: false });
 
-        $("totalAccounts").textContent = accountRows.length;
+    if (filesError) throw filesError;
 
-        $("pendingAccounts").textContent =
-          accountRows.filter(
-            account => account.account_status === "pending"
-          ).length;
+    const accountRows = accounts || [];
+    const campaignRows = campaigns || [];
+    const paymentRows = payments || [];
 
-        $("totalCampaigns").textContent = campaignRows.length;
-        $("totalPayments").textContent = paymentRows.length;
+    renderAccounts(accountRows);
+    renderCampaigns(campaignRows, accountRows);
+    renderPayments(paymentRows, campaignRows, accountRows);
+    renderCampaignFiles(files || [], campaignRows, accountRows);
 
-        showMessage(
-          "dashboardMessage",
-          "Dashboard data loaded successfully."
-        );
+    $("totalAccounts").textContent = accountRows.length;
 
-      } catch (error) {
-        showMessage(
-          "dashboardMessage",
-          "Could not load dashboard data: " +
-            (error.message || "Unknown error"),
-          true
-        );
-      } finally {
-        loading = false;
-        $("refreshButton").disabled = false;
-      }
-    }
+    $("pendingAccounts").textContent =
+      accountRows.filter(
+        account => account.account_status === "pending"
+      ).length;
+
+    $("totalCampaigns").textContent = campaignRows.length;
+    $("totalPayments").textContent = paymentRows.length;
+
+    showMessage(
+      "dashboardMessage",
+      "Dashboard data loaded successfully."
+    );
+
+  } catch (error) {
+    showMessage(
+      "dashboardMessage",
+      "Could not load dashboard data: " +
+        (error.message || "Unknown error"),
+      true
+    );
+  } finally {
+    loading = false;
+    $("refreshButton").disabled = false;
+  }
+}
+
     function renderAccounts(accounts) {
       const body = $("accountsTable");
 
@@ -832,7 +835,15 @@ const { data: updatedAccount, error: updateError } =
               data-campaign-action="final-approve">
               Final Approve
             </button>`;
-
+} else if (campaign.status === "approved") {
+  actionButtons = `
+    <button
+      type="button"
+      class="primary"
+      data-campaign-id="${escapeHTML(campaign.id)}"
+      data-campaign-action="activate">
+      Activate Campaign
+    </button>`;
                 } else if (campaign.status === "active") {
           actionButtons = `
             <button
