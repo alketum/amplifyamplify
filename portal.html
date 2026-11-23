@@ -1296,8 +1296,7 @@ async function loadCampaigns() {
     const { data, error } = await db
       .from("client_campaigns")
       .select(
-        "id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date"
-      )
+        "id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date, completed_at"
       .eq("client_account_id", currentAccount.id)
       .order("created_at", { ascending: false });
 
