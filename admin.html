@@ -573,8 +573,8 @@
           await db
             .from("client_campaigns")
             .select(
-              "id, client_account_id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date"
-            )
+  "id, client_account_id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date, completed_at"
+)
             .order("requested_at", { ascending: false });
 
         if (campaignError) throw campaignError;
@@ -834,14 +834,14 @@ const { data: updatedAccount, error: updateError } =
               Final Approve
             </button>`;
 
-        } else if (campaign.status === "approved") {
+                } else if (campaign.status === "active") {
           actionButtons = `
             <button
               type="button"
               class="primary"
               data-campaign-id="${escapeHTML(campaign.id)}"
-              data-campaign-action="activate">
-              Activate Campaign
+              data-campaign-action="complete">
+              Complete Campaign
             </button>`;
         }
 
@@ -1038,6 +1038,48 @@ const { data: updatedAccount, error: updateError } =
         );
       }
     }
+
+async function completeCampaign(campaignId) {
+  if (!campaignId) return;
+
+  const confirmed = window.confirm(
+    "Mark this active campaign as completed? This records today's completion date. This action cannot be reversed through the dashboard."
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const { data, error } = await db.rpc(
+      "admin_complete_client_campaign",
+      {
+        p_campaign_id: campaignId
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data || data.success !== true) {
+      throw new Error(
+        data?.message || "Campaign completion failed."
+      );
+    }
+
+    showMessage(
+      "dashboardMessage",
+      "Campaign completed successfully. Completion date: " +
+        formatDate(data.completed_at) + "."
+    );
+
+    await loadDashboard();
+
+  } catch (error) {
+    showMessage(
+      "dashboardMessage",
+      error.message || "Could not complete campaign.",
+      true
+    );
+  }
+}
 
     function renderPayments(payments, campaigns, accounts) {
       const body = $("paymentsTable");
@@ -1355,7 +1397,9 @@ const { data: updatedAccount, error: updateError } =
         finalApproveCampaign(campaignId);
         return;
       }
-
+      if (action === "complete") {
+        completeCampaign(campaignId);
+      }
       if (action === "activate") {
         activateCampaign(campaignId);
       }
