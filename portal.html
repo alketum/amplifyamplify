@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,15 +53,8 @@
       margin-bottom: 18px;
     }
 
-    h2 {
-      margin-top: 0;
-      font-size: 21px;
-    }
-
-    h3 {
-      font-size: 17px;
-      overflow-wrap: anywhere;
-    }
+    h2 { margin-top: 0; font-size: 21px; }
+    h3 { font-size: 17px; overflow-wrap: anywhere; }
 
     label {
       display: block;
@@ -113,22 +107,21 @@
     }
 
     .status {
-  padding: 12px;
-  background: #0b1429;
-  border-radius: 8px;
-  margin: 12px 0;
-  overflow-wrap: anywhere;
-}
+      padding: 12px;
+      background: #0b1429;
+      border-radius: 8px;
+      margin: 12px 0;
+      overflow-wrap: anywhere;
+    }
 
-.hidden {
-  display: none;
-}
+    .hidden { display: none; }
 
-.campaign-item {
-  border-top: 1px solid #344260;
-  padding: 16px 0;
-  overflow-wrap: anywhere;
-}
+    .campaign-item {
+      border-top: 1px solid #344260;
+      padding: 16px 0;
+      overflow-wrap: anywhere;
+    }
+
     .payment-box {
       margin-top: 14px;
       padding: 15px;
@@ -153,9 +146,7 @@
       overflow-wrap: anywhere;
     }
 
-    a {
-      color: #53d7f0;
-    }
+    a { color: #53d7f0; }
 
     footer {
       text-align: center;
@@ -163,121 +154,117 @@
       padding: 20px;
       font-size: 13px;
     }
-.campaign-files {
-  margin-top: 16px;
-  padding: 15px;
-  background: #0b1429;
-  border: 1px solid #435477;
-  border-radius: 10px;
-}
 
-.campaign-files h4 {
-  margin: 0 0 10px;
-  color: #dce5ff;
-}
+    .campaign-files {
+      margin-top: 16px;
+      padding: 15px;
+      background: #0b1429;
+      border: 1px solid #435477;
+      border-radius: 10px;
+    }
 
-.file-list {
-  margin-top: 12px;
-}
+    .campaign-files h4 {
+      margin: 0 0 10px;
+      color: #dce5ff;
+    }
 
-.file-row {
-  padding: 10px 0;
-  border-top: 1px solid #344260;
-  overflow-wrap: anywhere;
-}
+    .file-list { margin-top: 12px; }
 
-.file-row button {
-  margin-top: 8px;
-}
+    .file-row {
+      padding: 10px 0;
+      border-top: 1px solid #344260;
+      overflow-wrap: anywhere;
+    }
 
-.file-upload-note {
-  color: #aab8d8;
-  font-size: 13px;
-  line-height: 1.5;
-}
+    .file-row button { margin-top: 8px; }
+
+    .file-upload-note {
+      color: #aab8d8;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .campaign-timeline {
+      margin: 20px 0;
+      padding: 16px;
+      background: #17213a;
+      border: 1px solid #34415e;
+      border-radius: 12px;
+    }
+
+    .campaign-timeline h4 {
+      margin: 0 0 16px;
+      color: #ffffff;
+    }
+
+    .campaign-timeline ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .campaign-timeline li {
+      position: relative;
+      padding: 10px 12px 10px 34px;
+      margin: 0 0 8px;
+      border-left: 3px solid #526078;
+      color: #aab4c8;
+      background: #101629;
+      border-radius: 6px;
+    }
+
+    .campaign-timeline li::before {
+      content: "";
+      position: absolute;
+      left: -7px;
+      top: 14px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #526078;
+    }
+
+    .campaign-timeline li.is-complete {
+      border-left-color: #22c55e;
+      color: #bbf7d0;
+    }
+
+    .campaign-timeline li.is-complete::before {
+      background: #22c55e;
+    }
+
+    .campaign-timeline li.is-current {
+      border-left-color: #38bdf8;
+      color: #ffffff;
+      font-weight: 700;
+      background: #203653;
+    }
+
+    .campaign-timeline li.is-current::before {
+      background: #38bdf8;
+    }
+
+    .campaign-timeline li.is-upcoming { opacity: .65; }
+
+    .timeline-terminal {
+      padding: 12px;
+      color: #fecaca;
+      background: #3b1d2a;
+      border-radius: 8px;
+    }
+
+    .timeline-date {
+      display: block;
+      margin-top: 5px;
+      font-size: 12px;
+      font-weight: normal;
+      opacity: .9;
+    }
+
     @media (max-width: 480px) {
       .panel { padding: 17px; }
       header h1 { font-size: 22px; }
     }
-
-/* Campaign Progress Timeline */
-.campaign-timeline {
-  margin: 20px 0;
-  padding: 16px;
-  background: #17213a;
-  border: 1px solid #34415e;
-  border-radius: 12px;
-}
-
-.campaign-timeline h4 {
-  margin: 0 0 16px;
-  color: #ffffff;
-}
-
-.campaign-timeline ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.campaign-timeline li {
-  position: relative;
-  padding: 10px 12px 10px 34px;
-  margin: 0 0 8px;
-  border-left: 3px solid #526078;
-  color: #aab4c8;
-  background: #101629;
-  border-radius: 6px;
-}
-
-.campaign-timeline li::before {
-  content: "";
-  position: absolute;
-  left: -7px;
-  top: 14px;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #526078;
-}
-
-.campaign-timeline li.is-complete {
-  border-left-color: #22c55e;
-  color: #bbf7d0;
-}
-
-.campaign-timeline li.is-complete::before {
-  background: #22c55e;
-}
-
-.campaign-timeline li.is-current {
-  border-left-color: #38bdf8;
-  color: #ffffff;
-  font-weight: 700;
-  background: #203653;
-}
-
-.campaign-timeline li.is-current::before {
-  background: #38bdf8;
-}
-
-.campaign-timeline li.is-upcoming {
-  opacity: 0.65;
-}
-
-.timeline-terminal {
-  padding: 12px;
-  color: #fecaca;
-  background: #3b1d2a;
-  border-radius: 8px;
-}
-.timeline-date {
-  display: block;
-  margin-top: 5px;
-  font-size: 12px;
-  font-weight: normal;
-  opacity: 0.9;
-}
   </style>
 </head>
 
@@ -294,7 +281,6 @@
 
   <!-- CLIENT REGISTRATION AND SIGN IN -->
   <section id="authPanel" class="panel">
-
     <h2>Client Account Access</h2>
 
     <p class="muted">
@@ -302,7 +288,6 @@
     </p>
 
     <div id="registrationSection">
-
       <h3>Create a client account</h3>
 
       <label for="businessName">Business / Organisation Name</label>
@@ -327,13 +312,11 @@
       <p class="muted">
         Your account will begin with pending status. Registration does not automatically activate paid services.
       </p>
-
     </div>
 
     <hr style="border-color:#344260; margin:25px 0">
 
     <div id="loginForm">
-
       <h3>Already registered? Sign in</h3>
 
       <label for="loginEmail">Email Address</label>
@@ -347,14 +330,11 @@
       <p class="muted" style="text-align:center">
         <a href="#" id="forgotPasswordLink">Forgot Password?</a>
       </p>
-
     </div>
-
   </section>
 
   <!-- PASSWORD RECOVERY -->
   <section id="recoveryPanel" class="panel hidden">
-
     <h2>Reset Your Password</h2>
 
     <p class="muted">
@@ -362,18 +342,15 @@
     </p>
 
     <div id="requestRecoveryForm">
-
       <label for="recoveryEmail">Email Address</label>
       <input id="recoveryEmail" type="email" autocomplete="email" required>
 
       <button id="sendRecoveryButton" type="button">
         Send Recovery Email
       </button>
-
     </div>
 
     <div id="newPasswordForm" class="hidden">
-
       <label for="newPassword">New Password</label>
       <input id="newPassword" type="password" minlength="8" autocomplete="new-password">
 
@@ -383,20 +360,17 @@
       <button id="updatePasswordButton" type="button">
         Update Password
       </button>
-
     </div>
 
     <button id="backToLoginButton" class="secondary" type="button">
       Back to Sign In
     </button>
-
   </section>
 
   <!-- CLIENT DASHBOARD -->
   <section id="dashboard" class="hidden">
 
     <div id="accountSetup" class="panel hidden">
-
       <h2>Complete Your Business Registration</h2>
 
       <p class="muted">
@@ -422,11 +396,9 @@
       <p class="muted">
         Your account will remain pending until reviewed by ALKETUM MEDIA GROUP.
       </p>
-
     </div>
 
     <div class="panel">
-
       <h2>Business Dashboard</h2>
 
       <p id="welcome" class="muted"></p>
@@ -443,12 +415,10 @@
       <button id="logoutButton" class="secondary" type="button">
         Sign Out
       </button>
-
     </div>
 
     <!-- CAMPAIGN ENQUIRY -->
     <div id="campaignSection" class="panel">
-
       <h2>Submit a Campaign Enquiry</h2>
 
       <label for="serviceName">Service Requested</label>
@@ -464,12 +434,10 @@
       <p class="muted">
         Submitting an enquiry does not confirm payment, approval or campaign activation.
       </p>
-
     </div>
 
     <!-- CAMPAIGN HISTORY AND PAYMENT -->
     <div id="campaignHistorySection" class="panel">
-
       <h2>My Campaign Enquiries</h2>
 
       <p class="muted">
@@ -479,7 +447,6 @@
       <div id="campaignList" class="muted">
         Loading your enquiries...
       </div>
-
     </div>
 
   </section>
@@ -498,6 +465,7 @@
 </footer>
 
 <script>
+
 "use strict";
 
 const SUPABASE_URL =
@@ -510,6 +478,7 @@ const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
+
 const CAMPAIGN_FILE_BUCKET = "campaign-files";
 
 const ALLOWED_CAMPAIGN_FILE_TYPES = [
@@ -541,6 +510,7 @@ function canUploadCampaignFiles(campaign) {
     ALLOWED_CAMPAIGN_FILE_STATUSES.includes(campaign.status)
   );
 }
+
 const $ = (id) => document.getElementById(id);
 
 let currentUser = null;
@@ -628,12 +598,15 @@ function prepareAccountSetup() {
 }
 
 async function createBusinessAccount(details) {
-  const { data, error } = await db.rpc("register_client_account", {
-    p_business_name: details.businessName,
-    p_contact_name: details.contactName,
-    p_email: currentUser.email,
-    p_phone: details.phone || ""
-  });
+  const { data, error } = await db.rpc(
+    "register_client_account",
+    {
+      p_business_name: details.businessName,
+      p_contact_name: details.contactName,
+      p_email: currentUser.email,
+      p_phone: details.phone || ""
+    }
+  );
 
   if (error) throw error;
 
@@ -648,7 +621,6 @@ async function register() {
   const email = $("registerEmail").value.trim();
   const phone = $("phone").value.trim();
   const password = $("registerPassword").value;
-
   const button = $("registerButton");
 
   if (!businessName || !contactName || !email || !password) {
@@ -904,9 +876,12 @@ async function loadDashboard() {
 
     currentUser = userData.user;
 
+    // FIXED: Complete client account query.
     const { data: account, error } = await db
       .from("client_accounts")
-      .select("*")
+      .select(
+        "id, auth_user_id, business_name, contact_name, email, phone, account_status, created_at"
+      )
       .eq("auth_user_id", currentUser.id)
       .maybeSingle();
 
@@ -1022,7 +997,7 @@ function campaignProgressMessage(status) {
       "Your campaign is active.",
 
     completed:
-  "This campaign has been marked as completed.",
+      "This campaign has been marked as completed.",
 
     rejected:
       "This campaign enquiry was not approved.",
@@ -1058,7 +1033,6 @@ function renderCampaign(campaign, files = []) {
       </p>
   `;
 
-  
   const timelineStages = [
     "Enquiry received",
     "ALKETUM review",
@@ -1080,7 +1054,6 @@ function renderCampaign(campaign, files = []) {
     completed: 8
   };
 
-
   if (status === "rejected" || status === "cancelled") {
     html += `
       <div class="campaign-timeline">
@@ -1100,26 +1073,31 @@ function renderCampaign(campaign, files = []) {
         <ol>
           ${timelineStages.map((stage, index) => {
             const position = index + 1;
+
+            // Completed campaigns show every stage as complete.
             const stageClass =
-              position < currentStage
+              status === "completed" || position < currentStage
                 ? "is-complete"
                 : position === currentStage
                   ? "is-current"
                   : "is-upcoming";
 
-             const milestoneDate =
-  position === 6 && campaign.activation_date
-    ? `<small class="timeline-date">Activation: ${escapeHTML(campaign.activation_date)}</small>`
-    : position === 7 && campaign.expiry_date
-      ? `<small class="timeline-date">Expires: ${escapeHTML(campaign.expiry_date)}</small>`
-      : "";
+            // Activation, expiry and completion milestones.
+            const milestoneDate =
+              position === 6 && campaign.activation_date
+                ? `<small class="timeline-date">Activation: ${escapeHTML(campaign.activation_date)}</small>`
+                : position === 7 && campaign.expiry_date
+                  ? `<small class="timeline-date">Expires: ${escapeHTML(campaign.expiry_date)}</small>`
+                  : position === 8 && campaign.completed_at
+                    ? `<small class="timeline-date">Completed: ${escapeHTML(campaign.completed_at)}</small>`
+                    : "";
 
-return `
-  <li class="${stageClass}">
-    ${escapeHTML(stage)}
-    ${milestoneDate}
-  </li>
-`;
+            return `
+              <li class="${stageClass}">
+                ${escapeHTML(stage)}
+                ${milestoneDate}
+              </li>
+            `;
           }).join("")}
         </ol>
       </div>
@@ -1213,6 +1191,7 @@ return `
     `;
   }
 
+  // Client files remain visible for active client accounts.
   if (currentAccount.account_status === "active") {
     html += `
       <div class="campaign-files">
@@ -1293,10 +1272,12 @@ async function loadCampaigns() {
   list.textContent = "Loading campaign enquiries...";
 
   try {
+    // FIXED: The select call is properly closed.
     const { data, error } = await db
       .from("client_campaigns")
       .select(
         "id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date, completed_at"
+      )
       .eq("client_account_id", currentAccount.id)
       .order("created_at", { ascending: false });
 
@@ -1351,15 +1332,22 @@ async function loadCampaigns() {
     );
   }
 }
+
 async function uploadCampaignFile(input) {
   const campaignId = input.dataset.campaignId;
   const file = input.files && input.files[0];
 
   if (!file) return;
 
-  if (!currentUser || !currentAccount ||
-      currentAccount.account_status !== "active") {
-    showMessage("Your active client account is required for file uploads.", true);
+  if (
+    !currentUser ||
+    !currentAccount ||
+    currentAccount.account_status !== "active"
+  ) {
+    showMessage(
+      "Your active client account is required for file uploads.",
+      true
+    );
     input.value = "";
     return;
   }
@@ -1377,7 +1365,10 @@ async function uploadCampaignFile(input) {
   }
 
   if (!file.name.trim() || file.name.length > 255) {
-    showMessage("The filename must be between 1 and 255 characters.", true);
+    showMessage(
+      "The filename must be between 1 and 255 characters.",
+      true
+    );
     input.value = "";
     return;
   }
@@ -1397,7 +1388,9 @@ async function uploadCampaignFile(input) {
     if (campaignError) throw campaignError;
 
     if (!campaign || !canUploadCampaignFiles(campaign)) {
-      throw new Error("File uploads are not permitted for this campaign.");
+      throw new Error(
+        "File uploads are not permitted for this campaign."
+      );
     }
 
     const uniqueId =
@@ -1406,7 +1399,10 @@ async function uploadCampaignFile(input) {
         ? window.crypto.randomUUID()
         : Date.now() + "-" + Math.random().toString(36).slice(2);
 
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const safeName = file.name.replace(
+      /[^a-zA-Z0-9._-]/g,
+      "_"
+    );
 
     const storagePath =
       campaignId + "/" + uniqueId + "-" + safeName;
@@ -1459,10 +1455,17 @@ async function uploadCampaignFile(input) {
     input.disabled = false;
   }
 }
+
 async function downloadCampaignFile(fileId) {
-  if (!currentUser || !currentAccount ||
-      currentAccount.account_status !== "active") {
-    showMessage("An active client account is required for file access.", true);
+  if (
+    !currentUser ||
+    !currentAccount ||
+    currentAccount.account_status !== "active"
+  ) {
+    showMessage(
+      "An active client account is required for file access.",
+      true
+    );
     return;
   }
 
@@ -1474,7 +1477,10 @@ async function downloadCampaignFile(fileId) {
       .maybeSingle();
 
     if (fileError) throw fileError;
-    if (!file) throw new Error("File not found or access denied.");
+
+    if (!file) {
+      throw new Error("File not found or access denied.");
+    }
 
     const { data, error } = await db.storage
       .from(CAMPAIGN_FILE_BUCKET)
@@ -1487,15 +1493,21 @@ async function downloadCampaignFile(fileId) {
     link.download = file.original_file_name;
     link.target = "_blank";
     link.rel = "noopener";
+
     document.body.appendChild(link);
     link.click();
     link.remove();
 
   } catch (error) {
     console.error("Campaign file download error:", error);
-    showMessage(error.message || "File download failed.", true);
+
+    showMessage(
+      error.message || "File download failed.",
+      true
+    );
   }
 }
+
 async function submitPaymentReference(form) {
   clearMessage();
 
@@ -1507,7 +1519,7 @@ async function submitPaymentReference(form) {
     return;
   }
 
-if (currentAccount.account_status !== "active") {
+  if (currentAccount.account_status !== "active") {
     showMessage(
       "Your client account must be active before submitting payment.",
       true
@@ -1525,7 +1537,7 @@ if (currentAccount.account_status !== "active") {
     return;
   }
 
-if (!reference || reference.length > 200) {
+  if (!reference || reference.length > 200) {
     showMessage(
       "Please enter a valid Yoco payment reference.",
       true
@@ -1537,7 +1549,7 @@ if (!reference || reference.length > 200) {
     "Submit this Yoco payment reference to ALKETUM for verification?\n\nThe payment will remain pending until ALKETUM independently checks the transaction."
   );
 
-if (!confirmed) return;
+  if (!confirmed) return;
 
   setBusy(button, true, "Submitting reference...");
 
@@ -1558,7 +1570,7 @@ if (!confirmed) return;
       );
     }
 
-showMessage(
+    showMessage(
       "Payment reference submitted successfully. Amount: " +
       formatZAR(data.amount) +
       ". Your payment is awaiting ALKETUM verification."
@@ -1595,8 +1607,6 @@ async function logout() {
 
     showMessage("You have signed out successfully.");
 
-showMessage("You have signed out successfully.");
-
   } catch (error) {
     showMessage(
       error.message || "Sign-out failed.",
@@ -1616,9 +1626,8 @@ $("campaignButton").addEventListener("click", submitCampaign);
 $("logoutButton").addEventListener("click", logout);
 
 // Payment forms are created dynamically inside campaignList.
-// This listener handles all campaign payment forms.
 $("campaignList").addEventListener("submit", async (event) => {
-const form = event.target.closest("form.payment-form");
+  const form = event.target.closest("form.payment-form");
 
   if (!form) return;
 
@@ -1626,6 +1635,8 @@ const form = event.target.closest("form.payment-form");
 
   await submitPaymentReference(form);
 });
+
+// Campaign file uploads.
 $("campaignList").addEventListener("change", async (event) => {
   const input = event.target.closest(".campaign-file-input");
 
@@ -1634,6 +1645,7 @@ $("campaignList").addEventListener("change", async (event) => {
   await uploadCampaignFile(input);
 });
 
+// Campaign file downloads.
 $("campaignList").addEventListener("click", async (event) => {
   const button = event.target.closest(".campaign-file-download");
 
@@ -1653,6 +1665,8 @@ $("campaignList").addEventListener("click", async (event) => {
     button.textContent = "Download File";
   }
 });
+
+// Password recovery navigation.
 $("forgotPasswordLink").addEventListener("click", (event) => {
   event.preventDefault();
   clearMessage();
@@ -1671,7 +1685,7 @@ $("backToLoginButton").addEventListener("click", () => {
   $("dashboard").style.display = "none";
   $("authPanel").style.display = "block";
 
-clearMessage();
+  clearMessage();
 });
 
 // SUPABASE AUTHENTICATION EVENTS
@@ -1687,7 +1701,9 @@ db.auth.onAuthStateChange((event, session) => {
     $("requestRecoveryForm").style.display = "none";
     $("newPasswordForm").style.display = "block";
 
-  showMessage("Enter and confirm your new password below.");
+    showMessage(
+      "Enter and confirm your new password below."
+    );
   }
 
   if (event === "SIGNED_OUT") {
@@ -1715,7 +1731,7 @@ db.auth.getSession().then(({ data, error }) => {
     return;
   }
 
-if (isPasswordRecovery) return;
+  if (isPasswordRecovery) return;
 
   if (data.session) {
     loadDashboard();
