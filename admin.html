@@ -569,10 +569,9 @@
 
         if (accountError) throw accountError;
 
-        const { data: campaigns, error: campaignError } =
-          await db
-            .from("client_campaigns")
-            .select(
+        .select(
+  "id, client_account_id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date, completed_at"
+)
   "id, client_account_id, service_name, campaign_details, status, approved_amount, requested_at, activation_date, expiry_date, completed_at"
 )
             .order("requested_at", { ascending: false });
