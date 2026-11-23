@@ -463,6 +463,26 @@
 <footer>
   CONNECT • CREATE • PROMOTE • GROW • EARN • SERVE
 </footer>
+<script>
+(() => {
+  const report = (message) => {
+    const box = document.getElementById("message");
+    if (!box) return;
+
+    box.textContent = "Diagnostic error: " + message;
+    box.classList.remove("hidden");
+    box.style.color = "#ff7777";
+  };
+
+  window.addEventListener("error", (event) => {
+    report(event.message || "JavaScript execution error");
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    report(event.reason?.message || String(event.reason));
+  });
+})();
+</script>
 
 <script>
 
