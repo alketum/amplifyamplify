@@ -412,7 +412,36 @@
         </div>
       </div>
     </section>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Community Connector Applications</h2>
+          <p>Review and manage volunteer Connector applications.</p>
+        </div>
+      </div>
 
+      <div class="table-wrap">
+        <table id="connectorsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th>Applied</th>
+              <th>Connector ID</th>
+              <th>Review</th>
+            </tr>
+          </thead>
+          <tbody id="connectorsTableBody">
+            <tr>
+              <td colspan="7">Connector applications will appear here.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+   
     <footer>
       ALKETUM MEDIA GROUP · BUILD. OWN. SERVE. SCALE.
     </footer>
@@ -599,6 +628,15 @@ async function loadDashboard() {
         .order("created_at", { ascending: false });
 
     if (filesError) throw filesError;
+    const { data: connectors, error: connectorsError } =
+      await db
+        .from("community_connectors")
+        .select(
+          "id, full_name, email, phone, application_status, connector_code, applied_at"
+        )
+        .order("applied_at", { ascending: false });
+
+    if (connectorsError) throw connectorsError;
 
     const accountRows = accounts || [];
     const campaignRows = campaigns || [];
@@ -608,7 +646,7 @@ async function loadDashboard() {
     renderCampaigns(campaignRows, accountRows);
     renderPayments(paymentRows, campaignRows, accountRows);
     renderCampaignFiles(files || [], campaignRows, accountRows);
-
+    renderConnectors(connectors || []);
     $("totalAccounts").textContent = accountRows.length;
 
     $("pendingAccounts").textContent =
