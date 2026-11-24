@@ -1751,6 +1751,7 @@ db.auth.onAuthStateChange((event, session) => {
   }
 });
 
+
 // RESTORE EXISTING LOGIN SESSION
 
 db.auth.getSession().then(({ data, error }) => {
@@ -1778,11 +1779,10 @@ db.auth.getSession().then(({ data, error }) => {
   console.error("Session restoration error:", error);
 
   showMessage(
-    "Your login session could not be restored. Please refresh the page.",
+    error.message || "Your login session could not be restored. Please refresh the page.",
     true
   );
 });
-
 </script>
 </body>
 </html>
