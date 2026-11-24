@@ -1451,13 +1451,26 @@ async function uploadCampaignFile(input) {
         uploaded_by: currentUser.id
       });
 
-    if (metadataError) {
-      console.error("File metadata error:", metadataError);
+   if (metadataError) {
+  console.error("File metadata error:", metadataError);
 
-      throw new Error(
-        "The file reached storage, but its record could not be saved. Please contact ALKETUM for assistance."
-      );
-    }
+  const { data: cleanupData, error: cleanupError } =
+    await db.functions.invoke("dynamic-action", {
+      body: { storagePath }
+    });
+
+  if (cleanupError || !cleanupData?.success || !cleanupData?.deleted) {
+    console.error("Campaign upload cleanup failed:", cleanupError || cleanupData);
+
+    throw new Error(
+      "The file record could not be saved and automatic cleanup could not be confirmed. Please contact ALKETUM for assistance."
+    );
+  }
+
+  throw new Error(
+    "The file record could not be saved. The uploaded file was safely removed. Please try again."
+  );
+}
 
     showMessage("Campaign file uploaded successfully.");
 
