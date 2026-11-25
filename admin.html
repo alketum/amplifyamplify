@@ -497,6 +497,7 @@
 
     let currentUser = null;
     let loading = false;
+    let isPasswordRecovery = false;
 
     function escapeHTML(value) {
       return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -601,16 +602,20 @@ async function sendAdminRecoveryEmail() {
     }
 
     function showLogin() {
-      $("loginSection").classList.remove("hidden");
-      $("dashboardSection").classList.add("hidden");
-      currentUser = null;
-    }
-
+  $("loginSection").classList.remove("hidden");
+  $("adminRecoverySection").classList.add("hidden");
+  $("dashboardSection").classList.add("hidden");
+  currentUser = null;
+}
     function showDashboard() {
       $("loginSection").classList.add("hidden");
       $("dashboardSection").classList.remove("hidden");
     }
-
+function showAdminRecovery() {
+  $("loginSection").classList.add("hidden");
+  $("dashboardSection").classList.add("hidden");
+  $("adminRecoverySection").classList.remove("hidden");
+}
     async function verifyAdministrator() {
       const { data: userResult, error: userError } =
         await db.auth.getUser();
@@ -1674,6 +1679,81 @@ $("forgotAdminPassword").addEventListener("click", event => {
   sendAdminRecoveryEmail();
 });
 
+
+async function saveNewAdminPassword() {
+  const password = $("newAdminPassword").value;
+  const confirmation = $("confirmAdminPassword").value;
+  const button = $("updateAdminPassword");
+
+  clearMessage("recoveryMessage");
+
+  if (password.length < 8) {
+    showMessage(
+      "recoveryMessage",
+      "Your password must contain at least 8 characters.",
+      true
+    );
+    return;
+  }
+
+  if (password !== confirmation) {
+    showMessage(
+      "recoveryMessage",
+      "The two passwords do not match.",
+      true
+    );
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Updating Password...";
+
+  try {
+    const { error } = await db.auth.updateUser({
+      password: password
+    });
+
+    if (error) throw error;
+
+    $("newAdminPassword").value = "";
+    $("confirmAdminPassword").value = "";
+
+    const { error: signOutError } = await db.auth.signOut();
+
+    if (signOutError) {
+      showMessage(
+        "recoveryMessage",
+        "Password updated successfully, but automatic sign-out failed. Please sign out before continuing.",
+        true
+      );
+      return;
+    }
+
+    isPasswordRecovery = false;
+    showLogin();
+
+    showMessage(
+      "loginMessage",
+      "Administrator password updated successfully. Please sign in using your new password."
+    );
+
+  } catch (error) {
+    showMessage(
+      "recoveryMessage",
+      error.message || "Could not update the administrator password.",
+      true
+    );
+
+  } finally {
+    button.disabled = false;
+    button.textContent = "Update Password";
+  }
+}
+
+$("updateAdminPassword").addEventListener("click", () => {
+  saveNewAdminPassword();
+});
+
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
 
@@ -1765,35 +1845,61 @@ $("forgotAdminPassword").addEventListener("click", event => {
       }
     });
 
-    async function initialiseDashboard() {
-      try {
-        const { data, error } = await db.auth.getSession();
+    let resolveInitialAuthEvent;
 
-        if (error) throw error;
+const initialAuthEvent = new Promise(resolve => {
+  resolveInitialAuthEvent = resolve;
+});
 
-        if (!data.session) {
-          showLogin();
-          return;
-        }
+db.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    isPasswordRecovery = true;
+    showAdminRecovery();
+    resolveInitialAuthEvent();
+    return;
+  }
 
-        const authorised = await verifyAdministrator();
+  if (event === "INITIAL_SESSION") {
+    resolveInitialAuthEvent();
+  }
+});
 
-        if (authorised) {
-          await loadDashboard();
-        }
+async function initialiseDashboard() {
+  try {
+    await initialAuthEvent;
 
-      } catch (error) {
-        showLogin();
-
-        showMessage(
-          "loginMessage",
-          error.message || "Could not initialise administrator dashboard.",
-          true
-        );
-      }
+    if (isPasswordRecovery) {
+      showAdminRecovery();
+      return;
     }
 
-    initialiseDashboard();
+    const { data, error } = await db.auth.getSession();
+
+    if (error) throw error;
+
+    if (!data.session) {
+      showLogin();
+      return;
+    }
+
+    const authorised = await verifyAdministrator();
+
+    if (authorised) {
+      await loadDashboard();
+    }
+
+  } catch (error) {
+    showLogin();
+
+    showMessage(
+      "loginMessage",
+      error.message || "Could not initialise administrator dashboard.",
+      true
+    );
+  }
+}
+
+initialiseDashboard();
 
   </script>
 </body>
