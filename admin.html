@@ -1252,6 +1252,95 @@ async function completeCampaign(campaignId) {
         `;
       }).join("");
     }
+
+    function renderConnectors(connectors) {
+      const body = $("connectorsTableBody");
+
+      if (!connectors.length) {
+        body.innerHTML =
+          '<tr><td colspan="7">No Connector applications found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = connectors.map(connector => {
+        let actions = "—";
+
+        if (connector.application_status === "pending") {
+          actions = `
+            <button
+              type="button"
+              class="primary"
+              data-connector-id="${escapeHTML(connector.id)}"
+              data-connector-decision="approve">
+              Approve
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              data-connector-id="${escapeHTML(connector.id)}"
+              data-connector-decision="decline">
+              Decline
+            </button>
+          `;
+        }
+
+        return `
+          <tr>
+            <td>${escapeHTML(connector.full_name)}</td>
+            <td>${escapeHTML(connector.email || "—")}</td>
+            <td>${escapeHTML(connector.phone || "—")}</td>
+            <td>${statusLabel(connector.application_status)}</td>
+            <td>${escapeHTML(formatDate(connector.applied_at))}</td>
+            <td>${escapeHTML(connector.connector_code || "—")}</td>
+            <td>${actions}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function reviewConnector(connectorId, decision) {
+      if (!connectorId) return;
+
+      if (!["approve", "decline"].includes(decision)) {
+        showMessage("dashboardMessage", "Invalid Connector decision.", true);
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Are you sure you want to " + decision +
+        " this Connector application?"
+      );
+
+      if (!confirmed) return;
+
+      try {
+        const { error } = await db.rpc(
+          "admin_review_community_connector",
+          {
+            p_connector_id: connectorId,
+            p_decision: decision,
+            p_review_note: null
+          }
+        );
+
+        if (error) throw error;
+
+        await loadDashboard();
+
+        showMessage(
+          "dashboardMessage",
+          "Connector application " + decision + "d successfully."
+        );
+
+      } catch (error) {
+        showMessage(
+          "dashboardMessage",
+          error.message || "Could not review Connector application.",
+          true
+        );
+      }
+    }
+
     async function downloadAdminCampaignFile(fileId) {
       try {
         const { data: isAdmin, error: adminError } =
@@ -1463,6 +1552,7 @@ async function completeCampaign(campaignId) {
         button.dataset.paymentDecision
       );
     });
+   
     $("campaignFilesTable").addEventListener("click", async event => {
       const downloadButton = event.target.closest(
         "button[data-file-download]"
@@ -1494,6 +1584,18 @@ async function completeCampaign(campaignId) {
         await deleteAdminCampaignFile(fileId);
       }
     });
+
+    $("connectorsTableBody").addEventListener("click", event => {
+      const button = event.target.closest("button[data-connector-id]");
+
+      if (!button) return;
+
+      reviewConnector(
+        button.dataset.connectorId,
+        button.dataset.connectorDecision
+      );
+    });
+
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
 
