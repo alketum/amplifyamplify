@@ -218,39 +218,71 @@
       <div class="subtitle">MEDIA GROUP | ADMINISTRATION</div>
     </header>
 
-    <section id="loginSection" class="panel">
-      <h1>Administrator Login</h1>
-      <p class="muted">
-        Authorised ALKETUM workspace owners and administrators only.
-      </p>
+  <section id="loginSection" class="panel">
+  <h1>Administrator Login</h1>
+  <p class="muted">
+    Authorised ALKETUM workspace owners and administrators only.
+  </p>
 
-      <form id="loginForm">
-        <label for="adminEmail">Email address</label>
-        <input
-          type="email"
-          id="adminEmail"
-          autocomplete="username"
-          required
-        >
+  <form id="loginForm">
+    <label for="adminEmail">Email address</label>
+    <input
+      type="email"
+      id="adminEmail"
+      autocomplete="username"
+      required
+    >
 
-        <label for="adminPassword">Password</label>
-        <input
-          type="password"
-          id="adminPassword"
-          autocomplete="current-password"
-          required
-        >
+    <label for="adminPassword">Password</label>
+    <input
+      type="password"
+      id="adminPassword"
+      autocomplete="current-password"
+      required
+    >
 
-        <button type="submit" class="primary" id="loginButton">
-          Sign in securely
-        </button>
-      </form>
+    <button type="submit" class="primary" id="loginButton">
+      Sign in securely
+    </button>
 
-      <div id="loginMessage" class="message" role="alert"></div>
-    </section>
+    <p class="muted">
+      <a href="#" id="forgotAdminPassword">Forgot Administrator Password?</a>
+    </p>
+  </form>
 
-    <section id="dashboardSection" class="hidden">
+  <div id="loginMessage" class="message" role="alert"></div>
+</section>
+<section id="adminRecoverySection" class="panel hidden">
+  <h2>Reset Administrator Password</h2>
+  <p class="muted">
+    Enter and confirm your new administrator password.
+  </p>
 
+  <label for="newAdminPassword">New Password</label>
+  <input
+    type="password"
+    id="newAdminPassword"
+    minlength="8"
+    autocomplete="new-password"
+  >
+
+  <label for="confirmAdminPassword">Confirm New Password</label>
+  <input
+    type="password"
+    id="confirmAdminPassword"
+    minlength="8"
+    autocomplete="new-password"
+  >
+
+  <button type="button" class="primary" id="updateAdminPassword">
+    Update Password
+  </button>
+
+  <div id="recoveryMessage" class="message" role="alert"></div>
+</section>
+
+<section id="dashboardSection" class="hidden">
+    
       <div class="panel">
         <div class="top-actions">
           <div>
@@ -488,7 +520,48 @@
       element.textContent = "";
       element.className = "message";
     }
+async function sendAdminRecoveryEmail() {
+  const email = $("adminEmail").value.trim();
 
+  if (!email) {
+    showMessage(
+      "loginMessage",
+      "Enter your administrator email address first.",
+      true
+    );
+    $("adminEmail").focus();
+    return;
+  }
+
+  const link = $("forgotAdminPassword");
+  link.style.pointerEvents = "none";
+
+  clearMessage("loginMessage");
+
+  try {
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo:
+        "https://amplifyamplify-git-feature-connector-cde0fd-alketum-media-group.vercel.app/admin.html"
+    });
+
+    if (error) throw error;
+
+    showMessage(
+      "loginMessage",
+      "If the account exists, a recovery email has been sent. Please check your inbox."
+    );
+
+  } catch (error) {
+    showMessage(
+      "loginMessage",
+      error.message || "Could not send the recovery email.",
+      true
+    );
+
+  } finally {
+    link.style.pointerEvents = "";
+  }
+}
     function formatDate(value) {
       if (!value) return "—";
 
@@ -1595,6 +1668,11 @@ async function completeCampaign(campaignId) {
         button.dataset.connectorDecision
       );
     });
+
+$("forgotAdminPassword").addEventListener("click", event => {
+  event.preventDefault();
+  sendAdminRecoveryEmail();
+});
 
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
