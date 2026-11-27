@@ -1659,9 +1659,29 @@ async function completeCampaign(campaignId) {
       let reviewNote = "";
 
       if (decision === "link") {
-        clientAccountId = window.prompt("Enter the exact Client Account UUID to link. Confirm it against the client account record:");
-        if (!clientAccountId) return;
-        clientAccountId = clientAccountId.trim();
+        const accounts = (window.connectorAdminData && window.connectorAdminData.accounts) || [];
+        if (!accounts.length) {
+          showMessage("dashboardMessage", "No client accounts are available to link.", true);
+          return;
+        }
+
+        const accountChoices = accounts.map((account, index) =>
+          (index + 1) + ". " + account.business_name + " · " +
+          account.contact_name + " · " + (account.email || "No email") +
+          " · " + account.id
+        ).join("\\n");
+
+        const accountAnswer = window.prompt(
+          "Choose the matching client account number. Check the business, contact and email carefully:\\n\\n" +
+          accountChoices + "\\n\\nEnter the account number:"
+        );
+        if (!accountAnswer) return;
+        const accountIndex = Number(accountAnswer) - 1;
+        if (!Number.isInteger(accountIndex) || accountIndex < 0 || accountIndex >= accounts.length) {
+          showMessage("dashboardMessage", "Invalid client account selection.", true);
+          return;
+        }
+        clientAccountId = accounts[accountIndex].id;
 
         identityVerified = window.confirm("Have you independently verified that the referred business/contact matches this client account?");
         if (!identityVerified) {
@@ -1724,10 +1744,22 @@ async function completeCampaign(campaignId) {
         p.status === "verified" && p.verified_at
       );
 
-      const eligiblePairs = accountCampaigns.map(campaign => ({
-        campaign,
-        payments: verifiedPayments.filter(payment => payment.client_campaign_id === campaign.id)
-      })).filter(pair => pair.payments.length);
+      const eligiblePairs = [];
+      accountCampaigns.forEach(campaign => {
+        verifiedPayments
+          .filter(payment => payment.client_campaign_id === campaign.id)
+          .forEach(payment => eligiblePairs.push({ campaign, payment }));
+      });
+
+      eligiblePairs.sort((a, b) => {
+        const verifiedA = new Date(a.payment.verified_at).getTime();
+        const verifiedB = new Date(b.payment.verified_at).getTime();
+        if (verifiedA !== verifiedB) return verifiedA - verifiedB;
+        const createdA = new Date(a.payment.created_at).getTime();
+        const createdB = new Date(b.payment.created_at).getTime();
+        if (createdA !== createdB) return createdA - createdB;
+        return String(a.payment.id).localeCompare(String(b.payment.id));
+      });
 
       if (!eligiblePairs.length) {
         showMessage("dashboardMessage", "No qualifying campaign with a verified payment was found for this linked client.", true);
@@ -1736,44 +1768,32 @@ async function completeCampaign(campaignId) {
 
       const choices = eligiblePairs.map((pair, index) =>
         (index + 1) + ". " + pair.campaign.service_name + " · " +
-        pair.campaign.status + " · verified payment " +
-        formatDate(pair.payments[0].verified_at) + " · Campaign ID " + pair.campaign.id
-      ).join("\n");
+        pair.campaign.status + " · verified " +
+        formatDate(pair.payment.verified_at) + " · Payment " +
+        pair.payment.id
+      ).join("\\n");
 
       const answer = window.prompt(
-        "Choose the campaign number for reward creation. The database will independently verify that it is the FIRST qualifying campaign/payment.\n\n" +
-        choices + "\n\nEnter a number:"
+        "Choose the campaign/payment pair. The database independently verifies the FIRST qualifying campaign/payment, regardless of this list order:\\n\\n" +
+        choices + "\\n\\nEnter a number:"
       );
       if (!answer) return;
       const selectedIndex = Number(answer) - 1;
       if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= eligiblePairs.length) {
-        showMessage("dashboardMessage", "Invalid campaign selection.", true);
+        showMessage("dashboardMessage", "Invalid campaign/payment selection.", true);
         return;
       }
 
       const selected = eligiblePairs[selectedIndex];
-      const paymentChoices = selected.payments.map((payment, index) =>
-        (index + 1) + ". " + payment.provider + " · " +
-        payment.currency + " " + Number(payment.amount).toFixed(2) +
-        " · " + formatDate(payment.verified_at) + " · Payment ID " + payment.id
-      ).join("\n");
-      const paymentAnswer = window.prompt("Choose the verified payment number:\n\n" + paymentChoices + "\n\nEnter a number:");
-      if (!paymentAnswer) return;
-      const paymentIndex = Number(paymentAnswer) - 1;
-      if (!Number.isInteger(paymentIndex) || paymentIndex < 0 || paymentIndex >= selected.payments.length) {
-        showMessage("dashboardMessage", "Invalid payment selection.", true);
-        return;
-      }
-
       const eventNote = window.prompt("Optional reward creation note:") || "";
-      const confirmed = window.confirm("Create the fixed R100 pending reward? The database will check the first qualifying campaign and verified payment.");
+      const confirmed = window.confirm("Create the fixed R100 pending reward? The database will independently enforce the first qualifying campaign/payment.");
       if (!confirmed) return;
 
       try {
         const { data, error } = await db.rpc("admin_create_connector_reward", {
           p_referral_id: referralId,
           p_client_campaign_id: selected.campaign.id,
-          p_client_payment_id: selected.payments[paymentIndex].id,
+          p_client_payment_id: selected.payment.id,
           p_reward_amount: 100,
           p_event_note: eventNote.trim() || null
         });
