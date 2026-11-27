@@ -472,6 +472,88 @@
         </table>
       </div>
     </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Connector Referrals</h2>
+          <p>Review submitted business referrals and link verified client accounts.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Business / Contact</th>
+              <th>Contact details</th>
+              <th>Connector</th>
+              <th>Details</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th>Admin actions</th>
+            </tr>
+          </thead>
+          <tbody id="connectorReferralsBody">
+            <tr><td colspan="7">Referral records will appear here.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Connector Rewards</h2>
+          <p>Fixed reward: R100 for the first qualifying campaign payment only. Review and record payments here.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Reward</th>
+              <th>Connector</th>
+              <th>Referral / Campaign</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Payment reference</th>
+              <th>Admin actions</th>
+            </tr>
+          </thead>
+          <tbody id="connectorRewardsBody">
+            <tr><td colspan="7">Reward records will appear here.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Connector Reward Event History</h2>
+          <p>Audit trail of reward creation, approval, cancellation and payment recording.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Reward</th>
+              <th>Connector</th>
+              <th>Event</th>
+              <th>Status change</th>
+              <th>Admin note</th>
+              <th>Actor</th>
+            </tr>
+          </thead>
+          <tbody id="connectorRewardEventsBody">
+            <tr><td colspan="7">Reward events will appear here.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     </section> 
 
     <footer>
@@ -716,6 +798,28 @@ async function loadDashboard() {
 
     if (connectorsError) throw connectorsError;
 
+    const { data: referrals, error: referralsError } = await db
+      .from("connector_referrals")
+      .select("id, connector_id, business_name, contact_name, email, phone, referral_details, referral_status, linked_client_account_id, submitted_at, reviewed_at, review_note")
+      .order("submitted_at", { ascending: false });
+
+    if (referralsError) throw referralsError;
+
+    const { data: rewards, error: rewardsError } = await db
+      .from("connector_rewards")
+      .select("id, referral_id, connector_id, client_campaign_id, client_payment_id, amount, currency, reward_status, payment_reference, cancellation_reason, created_at, approved_at, paid_at")
+      .order("created_at", { ascending: false });
+
+    if (rewardsError) throw rewardsError;
+
+    const { data: rewardEvents, error: rewardEventsError } = await db
+      .from("connector_reward_events")
+      .select("id, reward_id, connector_id, event_type, previous_status, new_status, actor_id, event_note, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (rewardEventsError) throw rewardEventsError;
+
     const accountRows = accounts || [];
     const campaignRows = campaigns || [];
     const paymentRows = payments || [];
@@ -725,6 +829,18 @@ async function loadDashboard() {
     renderPayments(paymentRows, campaignRows, accountRows);
     renderCampaignFiles(files || [], campaignRows, accountRows);
     renderConnectors(connectors || []);
+    window.connectorAdminData = {
+      accounts: accountRows,
+      campaigns: campaignRows,
+      payments: paymentRows,
+      connectors: connectors || [],
+      referrals: referrals || [],
+      rewards: rewards || [],
+      rewardEvents: rewardEvents || []
+    };
+    renderConnectorReferrals(referrals || [], connectors || [], accountRows);
+    renderConnectorRewards(rewards || [], referrals || [], connectors || [], campaignRows);
+    renderConnectorRewardEvents(rewardEvents || [], connectors || []);
     $("totalAccounts").textContent = accountRows.length;
 
     $("pendingAccounts").textContent =
@@ -1419,6 +1535,304 @@ async function completeCampaign(campaignId) {
       }
     }
 
+
+    function connectorNameById(connectorId, connectors) {
+      const connector = (connectors || []).find(item => item.id === connectorId);
+      return connector ? connector.full_name : "Connector unavailable";
+    }
+
+    function renderConnectorReferrals(referrals, connectors, accounts) {
+      const body = $("connectorReferralsBody");
+      if (!body) return;
+      if (!referrals.length) {
+        body.innerHTML = '<tr><td colspan="7">No Connector referrals found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = referrals.map(referral => {
+        let actions = "—";
+        if (referral.referral_status === "submitted") {
+          actions = `
+            <button type="button" class="primary"
+              data-referral-id="${escapeHTML(referral.id)}"
+              data-referral-decision="link">Link verified client</button>
+            <button type="button" class="secondary"
+              data-referral-id="${escapeHTML(referral.id)}"
+              data-referral-decision="reject">Reject</button>
+            <button type="button" class="secondary"
+              data-referral-id="${escapeHTML(referral.id)}"
+              data-referral-decision="duplicate">Mark duplicate</button>`;
+        } else if (referral.referral_status === "linked") {
+          actions = `
+            <button type="button" class="primary"
+              data-referral-reward="${escapeHTML(referral.id)}">Create R100 reward</button>`;
+        }
+
+        const linkedAccount = (accounts || []).find(a => a.id === referral.linked_client_account_id);
+        const status = referral.referral_status === "linked" && linkedAccount
+          ? "Linked · " + linkedAccount.business_name
+          : referral.referral_status;
+
+        return `
+          <tr>
+            <td>${escapeHTML(referral.business_name)}<br><span class="muted">${escapeHTML(referral.contact_name)}</span></td>
+            <td>${escapeHTML(referral.email || "—")}<br>${escapeHTML(referral.phone || "—")}</td>
+            <td>${escapeHTML(connectorNameById(referral.connector_id, connectors))}</td>
+            <td>${escapeHTML(referral.referral_details || "—")}</td>
+            <td>${escapeHTML(status)}</td>
+            <td>${escapeHTML(formatDate(referral.submitted_at))}</td>
+            <td>${actions}</td>
+          </tr>`;
+      }).join("");
+    }
+
+    function renderConnectorRewards(rewards, referrals, connectors, campaigns) {
+      const body = $("connectorRewardsBody");
+      if (!body) return;
+      if (!rewards.length) {
+        body.innerHTML = '<tr><td colspan="7">No Connector rewards have been created.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = rewards.map(reward => {
+        const referral = (referrals || []).find(item => item.id === reward.referral_id);
+        const campaign = (campaigns || []).find(item => item.id === reward.client_campaign_id);
+        let actions = "—";
+
+        if (reward.reward_status === "pending") {
+          actions = `
+            <button type="button" class="primary"
+              data-reward-id="${escapeHTML(reward.id)}"
+              data-reward-decision="approve">Approve R100</button>
+            <button type="button" class="secondary"
+              data-reward-id="${escapeHTML(reward.id)}"
+              data-reward-decision="cancel">Cancel</button>`;
+        } else if (reward.reward_status === "approved") {
+          actions = `
+            <button type="button" class="primary"
+              data-reward-payment="${escapeHTML(reward.id)}">Record payment</button>
+            <button type="button" class="secondary"
+              data-reward-id="${escapeHTML(reward.id)}"
+              data-reward-decision="cancel">Cancel</button>`;
+        }
+
+        return `
+          <tr>
+            <td>${escapeHTML(reward.id.slice(0, 8))}</td>
+            <td>${escapeHTML(connectorNameById(reward.connector_id, connectors))}</td>
+            <td>${escapeHTML(referral ? referral.business_name : "Referral unavailable")}<br><span class="muted">${escapeHTML(campaign ? campaign.service_name : "Campaign " + String(reward.client_campaign_id || "").slice(0, 8))}</span></td>
+            <td>${escapeHTML(reward.currency || "ZAR")} ${escapeHTML(Number(reward.amount).toFixed(2))}</td>
+            <td>${escapeHTML(reward.reward_status)}</td>
+            <td>${escapeHTML(reward.payment_reference || reward.cancellation_reason || "—")}</td>
+            <td>${actions}</td>
+          </tr>`;
+      }).join("");
+    }
+
+    function renderConnectorRewardEvents(events, connectors) {
+      const body = $("connectorRewardEventsBody");
+      if (!body) return;
+      if (!events.length) {
+        body.innerHTML = '<tr><td colspan="7">No reward events recorded yet.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = events.map(item => `
+        <tr>
+          <td>${escapeHTML(formatDate(item.created_at))}</td>
+          <td>${escapeHTML(String(item.reward_id || "").slice(0, 8))}</td>
+          <td>${escapeHTML(connectorNameById(item.connector_id, connectors))}</td>
+          <td>${escapeHTML(item.event_type)}</td>
+          <td>${escapeHTML((item.previous_status || "—") + " → " + (item.new_status || "—"))}</td>
+          <td>${escapeHTML(item.event_note || "—")}</td>
+          <td>${escapeHTML(item.actor_id ? String(item.actor_id).slice(0, 8) : "System / unavailable")}</td>
+        </tr>`
+      ).join("");
+    }
+
+    async function reviewConnectorReferral(referralId, decision) {
+      if (!referralId || !["link", "reject", "duplicate"].includes(decision)) return;
+
+      let clientAccountId = null;
+      let identityVerified = false;
+      let noPriorClientConfirmed = false;
+      let reviewNote = "";
+
+      if (decision === "link") {
+        clientAccountId = window.prompt("Enter the exact Client Account UUID to link. Confirm it against the client account record:");
+        if (!clientAccountId) return;
+        clientAccountId = clientAccountId.trim();
+
+        identityVerified = window.confirm("Have you independently verified that the referred business/contact matches this client account?");
+        if (!identityVerified) {
+          window.alert("Linking cancelled. Identity verification is required.");
+          return;
+        }
+
+        noPriorClientConfirmed = window.confirm("Have you confirmed this business is a genuinely new client with no prior client relationship?");
+        if (!noPriorClientConfirmed) {
+          window.alert("Linking cancelled. Confirmation of no prior client relationship is required.");
+          return;
+        }
+        reviewNote = window.prompt("Add a short review note (required):") || "";
+        if (!reviewNote.trim()) {
+          window.alert("A review note is required before linking.");
+          return;
+        }
+      } else {
+        reviewNote = window.prompt("Enter the reason for this decision (required):") || "";
+        if (!reviewNote.trim()) {
+          window.alert("A review note is required.");
+          return;
+        }
+      }
+
+      const confirmed = window.confirm("Confirm " + decision + " for this Connector referral?");
+      if (!confirmed) return;
+
+      try {
+        const { data, error } = await db.rpc("admin_review_connector_referral", {
+          p_referral_id: referralId,
+          p_decision: decision,
+          p_client_account_id: clientAccountId,
+          p_identity_verified: identityVerified,
+          p_no_prior_client_confirmed: noPriorClientConfirmed,
+          p_review_note: reviewNote.trim()
+        });
+        if (error) throw error;
+        if (!data) throw new Error("Referral review did not return a confirmation.");
+        await loadDashboard();
+        showMessage("dashboardMessage", "Connector referral review completed: " + decision + ".");
+      } catch (error) {
+        showMessage("dashboardMessage", error.message || "Could not review Connector referral.", true);
+      }
+    }
+
+    async function createConnectorReward(referralId) {
+      const state = window.connectorAdminData || {};
+      const referral = (state.referrals || []).find(item => item.id === referralId);
+      if (!referral || referral.referral_status !== "linked" || !referral.linked_client_account_id) {
+        showMessage("dashboardMessage", "This referral is not linked to a client account.", true);
+        return;
+      }
+
+      const accountCampaigns = (state.campaigns || []).filter(c =>
+        c.client_account_id === referral.linked_client_account_id &&
+        ["approved", "active", "completed"].includes(c.status)
+      );
+      const verifiedPayments = (state.payments || []).filter(p =>
+        p.status === "verified" && p.verified_at
+      );
+
+      const eligiblePairs = accountCampaigns.map(campaign => ({
+        campaign,
+        payments: verifiedPayments.filter(payment => payment.client_campaign_id === campaign.id)
+      })).filter(pair => pair.payments.length);
+
+      if (!eligiblePairs.length) {
+        showMessage("dashboardMessage", "No qualifying campaign with a verified payment was found for this linked client.", true);
+        return;
+      }
+
+      const choices = eligiblePairs.map((pair, index) =>
+        (index + 1) + ". " + pair.campaign.service_name + " · " +
+        pair.campaign.status + " · verified payment " +
+        formatDate(pair.payments[0].verified_at) + " · Campaign ID " + pair.campaign.id
+      ).join("\n");
+
+      const answer = window.prompt(
+        "Choose the campaign number for reward creation. The database will independently verify that it is the FIRST qualifying campaign/payment.\n\n" +
+        choices + "\n\nEnter a number:"
+      );
+      if (!answer) return;
+      const selectedIndex = Number(answer) - 1;
+      if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= eligiblePairs.length) {
+        showMessage("dashboardMessage", "Invalid campaign selection.", true);
+        return;
+      }
+
+      const selected = eligiblePairs[selectedIndex];
+      const paymentChoices = selected.payments.map((payment, index) =>
+        (index + 1) + ". " + payment.provider + " · " +
+        payment.currency + " " + Number(payment.amount).toFixed(2) +
+        " · " + formatDate(payment.verified_at) + " · Payment ID " + payment.id
+      ).join("\n");
+      const paymentAnswer = window.prompt("Choose the verified payment number:\n\n" + paymentChoices + "\n\nEnter a number:");
+      if (!paymentAnswer) return;
+      const paymentIndex = Number(paymentAnswer) - 1;
+      if (!Number.isInteger(paymentIndex) || paymentIndex < 0 || paymentIndex >= selected.payments.length) {
+        showMessage("dashboardMessage", "Invalid payment selection.", true);
+        return;
+      }
+
+      const eventNote = window.prompt("Optional reward creation note:") || "";
+      const confirmed = window.confirm("Create the fixed R100 pending reward? The database will check the first qualifying campaign and verified payment.");
+      if (!confirmed) return;
+
+      try {
+        const { data, error } = await db.rpc("admin_create_connector_reward", {
+          p_referral_id: referralId,
+          p_client_campaign_id: selected.campaign.id,
+          p_client_payment_id: selected.payments[paymentIndex].id,
+          p_reward_amount: 100,
+          p_event_note: eventNote.trim() || null
+        });
+        if (error) throw error;
+        if (!data) throw new Error("Reward creation did not return a confirmation.");
+        await loadDashboard();
+        showMessage("dashboardMessage", "Fixed R100 Connector reward created successfully and is pending approval.");
+      } catch (error) {
+        showMessage("dashboardMessage", error.message || "Could not create Connector reward.", true);
+      }
+    }
+
+    async function reviewConnectorReward(rewardId, decision) {
+      if (!rewardId || !["approve", "cancel"].includes(decision)) return;
+      let eventNote = window.prompt(
+        decision === "cancel" ? "Enter the cancellation reason (required):" : "Optional approval note:"
+      ) || "";
+      if (decision === "cancel" && !eventNote.trim()) {
+        window.alert("A cancellation reason is required.");
+        return;
+      }
+      if (!window.confirm("Confirm " + decision + " for this R100 Connector reward?")) return;
+
+      try {
+        const { data, error } = await db.rpc("admin_review_connector_reward", {
+          p_reward_id: rewardId,
+          p_decision: decision,
+          p_event_note: eventNote.trim() || null
+        });
+        if (error) throw error;
+        if (!data) throw new Error("Reward review did not return a confirmation.");
+        await loadDashboard();
+        showMessage("dashboardMessage", "Connector reward " + decision + " completed.");
+      } catch (error) {
+        showMessage("dashboardMessage", error.message || "Could not review Connector reward.", true);
+      }
+    }
+
+    async function recordConnectorRewardPayment(rewardId) {
+      const reference = window.prompt("Enter the actual payment reference (required):");
+      if (!reference || !reference.trim()) return;
+      const eventNote = window.prompt("Optional payment note:") || "";
+      if (!window.confirm("Confirm that the R100 reward has actually been paid and record this payment reference?")) return;
+
+      try {
+        const { data, error } = await db.rpc("admin_record_connector_reward_payment", {
+          p_reward_id: rewardId,
+          p_payment_reference: reference.trim(),
+          p_event_note: eventNote.trim() || null
+        });
+        if (error) throw error;
+        if (!data) throw new Error("Payment recording did not return a confirmation.");
+        await loadDashboard();
+        showMessage("dashboardMessage", "Connector reward payment recorded successfully.");
+      } catch (error) {
+        showMessage("dashboardMessage", error.message || "Could not record Connector reward payment.", true);
+      }
+    }
+
     async function downloadAdminCampaignFile(fileId) {
       try {
         const { data: isAdmin, error: adminError } =
@@ -1660,6 +2074,27 @@ async function completeCampaign(campaignId) {
         const fileId = deleteButton.dataset.fileDelete;
 
         await deleteAdminCampaignFile(fileId);
+      }
+    });
+
+
+    $("connectorReferralsBody").addEventListener("click", event => {
+      const decisionButton = event.target.closest("button[data-referral-decision]");
+      const rewardButton = event.target.closest("button[data-referral-reward]");
+      if (decisionButton) {
+        reviewConnectorReferral(decisionButton.dataset.referralId, decisionButton.dataset.referralDecision);
+      } else if (rewardButton) {
+        createConnectorReward(rewardButton.dataset.referralReward);
+      }
+    });
+
+    $("connectorRewardsBody").addEventListener("click", event => {
+      const decisionButton = event.target.closest("button[data-reward-decision]");
+      const paymentButton = event.target.closest("button[data-reward-payment]");
+      if (decisionButton) {
+        reviewConnectorReward(decisionButton.dataset.rewardId, decisionButton.dataset.rewardDecision);
+      } else if (paymentButton) {
+        recordConnectorRewardPayment(paymentButton.dataset.rewardPayment);
       }
     });
 
