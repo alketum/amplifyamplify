@@ -1669,11 +1669,11 @@ async function completeCampaign(campaignId) {
           (index + 1) + ". " + account.business_name + " · " +
           account.contact_name + " · " + (account.email || "No email") +
           " · " + account.id
-        ).join("\\n");
+        ).join("\n");
 
         const accountAnswer = window.prompt(
-          "Choose the matching client account number. Check the business, contact and email carefully:\\n\\n" +
-          accountChoices + "\\n\\nEnter the account number:"
+          "Choose the matching client account number. Check the business, contact and email carefully:\n\n" +
+          accountChoices + "\n\nEnter the account number:"
         );
         if (!accountAnswer) return;
         const accountIndex = Number(accountAnswer) - 1;
@@ -1771,11 +1771,11 @@ async function completeCampaign(campaignId) {
         pair.campaign.status + " · verified " +
         formatDate(pair.payment.verified_at) + " · Payment " +
         pair.payment.id
-      ).join("\\n");
+      ).join("\n");
 
       const answer = window.prompt(
-        "Choose the campaign/payment pair. The database independently verifies the FIRST qualifying campaign/payment, regardless of this list order:\\n\\n" +
-        choices + "\\n\\nEnter a number:"
+        "Choose the campaign/payment pair. The database independently verifies the FIRST qualifying campaign/payment, regardless of this list order:\n\n" +
+        choices + "\n\nEnter a number:"
       );
       if (!answer) return;
       const selectedIndex = Number(answer) - 1;
